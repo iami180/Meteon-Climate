@@ -57,23 +57,26 @@ a {
 }
 
 .brand {
+  --brand-row-height: 56px;
+  --logo-slot: 128px;
+  --logo-size: 164px;
   position: relative;
   display: flex;
   align-items: center;
-  min-height: 60px;
-  padding-left: 68px;
+  height: var(--brand-row-height);
+  padding-left: var(--logo-slot);
   font-weight: 700;
-  font-size: 1.15rem;
+  font-size: 1.2rem;
   letter-spacing: 0.5px;
 }
 
 .brand-logo {
   position: absolute;
-  left: 0;
+  left: -30px;
   top: 50%;
   transform: translateY(-50%);
-  width: 60px;
-  height: 60px;
+  width: var(--logo-size);
+  height: var(--logo-size);
   object-fit: contain;
   display: block;
 }
@@ -81,18 +84,18 @@ a {
 .brand-text {
   display: flex;
   flex-direction: column;
-  line-height: 1.05;
+  line-height: 1.02;
   align-items: flex-start;
 }
 
 .brand-title {
   font-weight: 700;
-  font-size: 1.35rem;
+  font-size: 1.42rem;
   letter-spacing: 0.2px;
 }
 
 .brand-subtitle {
-  font-size: 0.72rem;
+  font-size: 0.76rem;
   color: var(--muted);
   letter-spacing: 0.6px;
   text-transform: lowercase;
@@ -445,22 +448,18 @@ a {
   }
 
   .brand {
+    --brand-row-height: 48px;
+    --logo-slot: 88px;
+    --logo-size: 120px;
     font-size: 1rem;
-    min-height: 48px;
-    padding-left: 56px;
-  }
-
-  .brand-logo {
-    width: 48px;
-    height: 48px;
   }
 
   .brand-title {
-    font-size: 1.15rem;
+    font-size: 1.2rem;
   }
 
   .brand-subtitle {
-    font-size: 0.66rem;
+    font-size: 0.65rem;
   }
 
   .hero {
