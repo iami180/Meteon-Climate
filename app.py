@@ -198,7 +198,7 @@ def api_metric_year():
     year = _safe_int(request.args.get("year"), default_year(metric))
     payload, err = metric_year_response(metric, year)
     return jsonify(payload), 400 if err else 200
- 
+  
 
 @app.get("/api/metric/entity")
 def api_metric_entity():
