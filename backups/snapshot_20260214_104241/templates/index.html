@@ -1,0 +1,32 @@
+﻿{% extends "base.html" %}
+
+{% block content %}
+<section class="container hero fade-up">
+  <div>
+    <h1>ClimateScope – Klíma adatok vizualizációja térképen és grafikonokon</h1>
+    <p>
+      A ClimateScope egy webes alkalmazás, amely közérthetően mutatja be a klímaváltozás fő mutatóit.
+      Év kiválasztásával és kategóriák között navigálva megtekintheted a hőmérséklet, csapadék,
+      CO₂-kibocsátás és egyéb mutatók trendjeit.
+    </p>
+    <a class="cta" href="/attekintes">Ugrás az áttekintésre</a>
+  </div>
+</section>
+
+<section class="section container">
+  <div class="grid grid-3">
+    <div class="card fade-up">
+      <h3>Egységes felület</h3>
+      <p class="muted">A legfontosabb klímaindikátorok egy helyen, gyorsan átláthatóan.</p>
+    </div>
+    <div class="card fade-up" style="animation-delay: 0.1s">
+      <h3>Évek összehasonlítása</h3>
+      <p class="muted">Válassz két évet, és azonnal látod a változások mértékét.</p>
+    </div>
+    <div class="card fade-up" style="animation-delay: 0.2s">
+      <h3>Látványos vizualizáció</h3>
+      <p class="muted">KPI kártyák, grafikonok és térképes megjelenítés a gyors következtetésekhez.</p>
+    </div>
+  </div>
+</section>
+{% endblock %}

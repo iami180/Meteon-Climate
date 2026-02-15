@@ -1,0 +1,333 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="section container fade-up" id="felmelegedes">
+  <h1>Föld felmelegedése</h1>
+  <p class="muted">
+    Globális hőmérsékleti trendek és anomáliák áttekintése.
+  </p>
+
+  <div class="controls">
+    <div class="control">
+      Kezdő év
+      <select id="startYear"></select>
+    </div>
+    <div class="control">
+      Záró év
+      <select id="endYear"></select>
+    </div>
+  </div>
+</section>
+
+<section class="section container">
+  <div class="grid grid-2">
+    <div class="card">
+      <h3>tlagos globális érték</h3>
+      <div class="value" id="avgGlobal">—</div>
+      <div class="muted">Kiválasztott időszak átlaga</div>
+    </div>
+    <div class="card">
+      <h3>Változás</h3>
+      <div class="value" id="deltaGlobal">—</div>
+      <div class="muted">Első vs. utolsó év</div>
+    </div>
+    <div class="card">
+      <h3>Legmelegebb év (globális)</h3>
+      <div class="value" id="warmestYear">—</div>
+      <div class="muted" id="warmestYearValue">—</div>
+    </div>
+  </div>
+</section>
+
+<section class="section container">
+  <div class="chart-wrap">
+    <h3 id="trendTitle">Globális hőmérsékleti trend</h3>
+    <canvas id="trendChart" height="180"></canvas>
+  </div>
+</section>
+
+<section class="section container">
+  <div class="card">
+    <h3>Értelmezés</h3>
+    <p class="muted" id="warmingNarrative">Adatok betöltése…</p>
+  </div>
+</section>
+
+<section class="section container" id="elorejelzes">
+  <div class="chart-wrap">
+    <h3>Előrejelzés (éves anomália)</h3>
+    <canvas id="forecastChart" height="160"></canvas>
+  </div>
+</section>
+
+<section class="section container">
+  <div class="grid grid-3">
+    <div class="card">
+      <h3>Alacsony kibocsátás</h3>
+      <div class="muted" id="forecastLow2030">2030: —</div>
+      <div class="muted" id="forecastLow2050">2050: —</div>
+    </div>
+    <div class="card">
+      <h3>Közepes kibocsátás</h3>
+      <div class="muted" id="forecastMedium2030">2030: —</div>
+      <div class="muted" id="forecastMedium2050">2050: —</div>
+    </div>
+    <div class="card">
+      <h3>Magas kibocsátás</h3>
+      <div class="muted" id="forecastHigh2030">2030: —</div>
+      <div class="muted" id="forecastHigh2050">2050: —</div>
+    </div>
+  </div>
+  <p class="muted" style="margin-top: 12px;">
+    Tájékoztató: ez az előrejelzés nem 100%-os bizonyosságú. Váratlan természeti, gazdasági vagy
+    politikai változások jelentősen módosíthatják a tényleges jövőbeli pályát.
+  </p>
+  <div class="card" style="margin-top: 14px;">
+    <h3>Hogyan számol az előrejelzés?</h3>
+    <div class="muted">
+      <p>
+        A modell a globális átlagos felszíni hőmérséklet anomáliáját számolja éves bontásban.
+        A bázisidőszak alapértelmezésben 1850–1900, ennek hiányában 1951–1980 korrekcióval.
+      </p>
+      <p>
+        A számítás figyelembe veszi az üvegházhatású gázokat (CO₂, CH₄, N₂O), az aeroszolok
+        hűtő/melegítő proxy hatását (szulfát, black carbon), valamint az óceáni tehetetlenséget
+        és egy ENSO-jellegű ingadozó komponenst.
+      </p>
+      <p>
+        A kényszerítő hatás CO₂-re logaritmikus képlettel készül (ΔF = 5.35 · ln(C/C0)).
+        A kimenet több kibocsátási pályát mutat (alacsony/közepes/magas), és minden évre tartományt
+        ad (min–max), nem csak egyetlen fix értéket.
+      </p>
+    </div>
+  </div>
+</section>
+
+<section class="section container">
+  <div class="card">
+    <h3>Felmelegedés háttere</h3>
+    <div class="muted" id="warmingBackground">
+      <p>
+        A globális felmelegedés a Föld átlaghőmérsékletének tartós, évtizedeken át mérhető emelkedése.
+        A folyamat fő hajtóereje az emberi tevékenység: a fosszilis energiahordozók égetése, az erdőirtás
+        és az ipari kibocsátások növelik a légkör üvegházhatású gázainak mennyiségét.
+      </p>
+      <p>
+        Az üvegházhatású gázok (például CO₂, CH₄, N₂O) visszatartják a Földről távozó hőt, ezért a bolygó
+        energiamérlege melegebb állapot felé tolódik. Emiatt a melegedés nem egyszeri kilengés, hanem
+        hosszú távon erősödő trendként jelenik meg az idősoros adatokban.
+      </p>
+      <p>
+        A felmelegedés következményei már ma is láthatók: gyakoribb és intenzívebb hőhullámok, olvadó
+        jégtakarók, emelkedő tengerszint, valamint szélsőségesebb csapadék- és időjárási mintázatok.
+        A változás mértéke régiónként eltér, de globális szinten az irány egyértelmű.
+      </p>
+      <p>
+        A megoldás két pillére a mérséklés és az alkalmazkodás. A mérsékléshez kibocsátáscsökkentés,
+        energiahatékonyság és tisztább energiatermelés kell; az alkalmazkodás pedig segít kezelni a már
+        bekövetkező hatásokat. A grafikonok ezt teszik érthetővé: megmutatják a változás ütemét és kockázatát.
+      </p>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  const SEO_INITIAL_START = {{ initial_start | default(None) | tojson }};
+  const SEO_INITIAL_END = {{ initial_end | default(None) | tojson }};
+  const SEO_BASE_PATH = {{ seo_base_path | default("/felmelegedes") | tojson }};
+  const PAGE_MODE = {{ page_mode | default("warming") | tojson }};
+  const startYear = document.getElementById("startYear");
+  const endYear = document.getElementById("endYear");
+  const avgGlobal = document.getElementById("avgGlobal");
+  const deltaGlobal = document.getElementById("deltaGlobal");
+  const trendTitle = document.getElementById("trendTitle");
+  const warmingNarrative = document.getElementById("warmingNarrative");
+  const warmestYear = document.getElementById("warmestYear");
+  const warmestYearValue = document.getElementById("warmestYearValue");
+  const forecastLow2030 = document.getElementById("forecastLow2030");
+  const forecastLow2050 = document.getElementById("forecastLow2050");
+  const forecastMedium2030 = document.getElementById("forecastMedium2030");
+  const forecastMedium2050 = document.getElementById("forecastMedium2050");
+  const forecastHigh2030 = document.getElementById("forecastHigh2030");
+  const forecastHigh2050 = document.getElementById("forecastHigh2050");
+
+  const ctx = document.getElementById("trendChart");
+  const chart = new Chart(ctx, {
+    type: "line",
+    data: { labels: [], datasets: [{ label: "Globális átlag", data: [], borderColor: "#ffb347", tension: 0.25 }] },
+    options: {
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { ticks: { color: "#b8c7d6" }, grid: { color: "rgba(255,255,255,0.08)" } },
+        x: { ticks: { color: "#b8c7d6" } },
+      },
+    },
+  });
+
+  const forecastCtx = document.getElementById("forecastChart");
+  const forecastChart = new Chart(forecastCtx, {
+    type: "line",
+    data: {
+      labels: [],
+      datasets: [
+        { label: "Alacsony", data: [], borderColor: "#55d6be", tension: 0.2 },
+        { label: "Közepes", data: [], borderColor: "#ffb347", tension: 0.2 },
+        { label: "Magas", data: [], borderColor: "#ff6b6b", tension: 0.2 },
+      ],
+    },
+    options: {
+      plugins: { legend: { labels: { color: "#b8c7d6" } } },
+      scales: {
+        y: { ticks: { color: "#b8c7d6" }, grid: { color: "rgba(255,255,255,0.08)" } },
+        x: { ticks: { color: "#b8c7d6" } },
+      },
+    },
+  });
+
+  function fmt(value, unit = "°C", digits = 2) {
+    if (value === null || value === undefined || Number.isNaN(value)) return "—";
+    return `${value.toLocaleString("hu-HU", { maximumFractionDigits: digits })}${unit}`;
+  }
+
+  function fillSelect(select, years, selected) {
+    select.innerHTML = "";
+    years.forEach((year) => {
+      const option = document.createElement("option");
+      option.value = year;
+      option.textContent = year;
+      if (year === selected) option.selected = true;
+      select.appendChild(option);
+    });
+  }
+
+  function updateUrl() {
+    if (PAGE_MODE !== "warming") {
+      return;
+    }
+    history.replaceState(null, "", `${SEO_BASE_PATH}/${startYear.value}/${endYear.value}`);
+  }
+
+  async function loadMeta() {
+    const res = await fetch("/api/meta?metric=temperature");
+    const meta = await res.json();
+    const years = meta.years || [];
+    const latest = years[years.length - 1];
+    const params = new URLSearchParams(window.location.search);
+    const qStart = Number(params.get("start"));
+    const qEnd = Number(params.get("end"));
+    const preferredStart = SEO_INITIAL_START ?? qStart;
+    const preferredEnd = SEO_INITIAL_END ?? qEnd;
+    const selectedStart = years.includes(preferredStart) ? preferredStart : (years[Math.max(0, years.length - 30)] || latest);
+    const selectedEnd = years.includes(preferredEnd) ? preferredEnd : latest;
+    fillSelect(startYear, years, selectedStart);
+    fillSelect(endYear, years, selectedEnd);
+    updateUrl();
+  }
+
+  async function loadTrend() {
+    const start = parseInt(startYear.value, 10);
+    const end = parseInt(endYear.value, 10);
+    const res = await fetch(`/api/metric/year?metric=temperature&year=${end}`);
+    const metaRes = await fetch("/api/meta?metric=temperature");
+    const meta = await metaRes.json();
+    const years = (meta.years || []).filter((y) => y >= start && y <= end);
+
+    const points = [];
+    for (const year of years) {
+      const r = await fetch(`/api/metric/year?metric=temperature&year=${year}`);
+      const data = await r.json();
+      const world = (data.data || []).find((d) => d.entity === "World");
+      points.push({ year, value: world?.value ?? null });
+    }
+
+    const values = points.map((p) => p.value).filter((v) => typeof v === "number");
+    const avg = values.length ? values.reduce((a, b) => a + b, 0) / values.length : null;
+    const delta = points.length && points[0].value !== null && points[points.length - 1].value !== null
+      ? points[points.length - 1].value - points[0].value
+      : null;
+
+    avgGlobal.textContent = fmt(avg);
+    deltaGlobal.textContent = fmt(delta);
+    trendTitle.textContent = `Globális hőmérsékleti trend (${start}–${end})`;
+
+    chart.data.labels = points.map((p) => p.year);
+    chart.data.datasets[0].data = points.map((p) => p.value);
+    chart.update();
+
+    const first = points.find((p) => p.value !== null);
+    const last = [...points].reverse().find((p) => p.value !== null);
+    const span = end - start + 1;
+    warmingNarrative.textContent =
+      `Ebben a nézetben a ${start}–${end} közötti időszak globális átlagait látod, ` +
+      `ami ${span} év változásait foglalja össze. Az időszak átlaga ${fmt(avg)}, ` +
+      `miközben az első rendelkezésre álló év (${first?.year ?? "—"}) és a legutóbbi év (${last?.year ?? "—"}) ` +
+      `közötti különbség ${fmt(delta)}. A görbe alakja azt mutatja meg, hogy a melegedés ` +
+      `folyamata mennyire egyenletes vagy éppen szakaszos: ahol meredekebb az emelkedés, ott ` +
+      `gyorsabb változás történt, a laposabb részek pedig stabilabb időszakokra utalnak. ` +
+      `Az ilyen idősoros nézet segít megérteni, hogy a felmelegedés nem egyetlen év szélsősége, ` +
+      `hanem hosszabb távú trend, amelynek iránya és üteme is értelmezhető.`; 
+  }
+
+  async function loadWarmestYear() {
+    const res = await fetch("/api/temperature/warmest");
+    const data = await res.json();
+    warmestYear.textContent = data.year ?? "—";
+    warmestYearValue.textContent = data.value === null || data.value === undefined ? "—" : fmt(data.value);
+  }
+
+  function forecastLine(target, row) {
+    if (!row) {
+      target.textContent = "—";
+      return;
+    }
+    target.textContent = `${row.year}: ${fmt(row.value)} (${fmt(row.min)} – ${fmt(row.max)}), ${row.category}`;
+  }
+
+  async function loadForecast() {
+    const res = await fetch("/api/temperature/forecast");
+    const data = await res.json();
+    const scenarios = data.scenarios || [];
+    const low = scenarios.find((s) => s.id === "low");
+    const medium = scenarios.find((s) => s.id === "medium");
+    const high = scenarios.find((s) => s.id === "high");
+
+    const labels = (low?.series || []).map((p) => p.year);
+    forecastChart.data.labels = labels;
+    forecastChart.data.datasets[0].data = (low?.series || []).map((p) => p.value);
+    forecastChart.data.datasets[1].data = (medium?.series || []).map((p) => p.value);
+    forecastChart.data.datasets[2].data = (high?.series || []).map((p) => p.value);
+    forecastChart.update();
+
+    forecastLine(forecastLow2030, low?.year_2030);
+    forecastLine(forecastLow2050, low?.year_2050);
+    forecastLine(forecastMedium2030, medium?.year_2030);
+    forecastLine(forecastMedium2050, medium?.year_2050);
+    forecastLine(forecastHigh2030, high?.year_2030);
+    forecastLine(forecastHigh2050, high?.year_2050);
+  }
+
+  startYear.addEventListener("change", () => {
+    updateUrl();
+    loadTrend();
+  });
+  endYear.addEventListener("change", () => {
+    updateUrl();
+    loadTrend();
+  });
+
+  loadMeta().then(() => {
+    loadTrend();
+    loadWarmestYear();
+    loadForecast();
+    if (PAGE_MODE === "forecast") {
+      document.getElementById("elorejelzes")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    } else {
+      document.getElementById("felmelegedes")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  });
+</script>
+{% endblock %}
+

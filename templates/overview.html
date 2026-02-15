@@ -1,0 +1,43 @@
+﻿{% extends "base.html" %}
+
+{% block content %}
+<section class="section container fade-up">
+  <h1>Adatok és módszertan</h1>
+  <p class="muted">
+    Az alábbi összefoglaló bemutatja a használt API-kat, a rendszer működését és a korlátokat.
+  </p>
+
+  <div class="grid grid-2">
+    <div class="card">
+      <h3>Használt API-k</h3>
+      <ul class="muted">
+        <li>Our World in Data Grapher CSV API: hőmérséklet, csapadék, CO₂ és népesség adatok.</li>
+        <li>OpenStreetMap tile API: térképi alapréteg a Leaflet nézethez.</li>
+        <li>Saját backend API: gyors, egységes JSON adatok a frontend számára.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Oldal infó</h3>
+      <ul class="muted">
+        <li>A backend adatbázis nélkül, memória-cache alapon szolgálja ki az adatokat.</li>
+        <li>A grafikonok és KPI-k év- és kontinensváltásra dinamikusan frissülnek.</li>
+        <li>A frontend kizárólag a saját backend végpontjait használja.</li>
+        <li>A CO₂ per fő érték CO₂ és népesség adatokból számolódik.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="section container">
+  <div class="grid">
+    <div class="card">
+      <h3>Korlátok</h3>
+      <ul class="muted">
+        <li>Az eredmények az alkalmazott módszertani feltételezésektől és adatforrásoktól függenek.</li>
+        <li>Az országos bontás a tényleges adatok elérhetőségétől és minőségétől függ.</li>
+        <li>A térképes nézet ország szintű adatokat használ, ezért egyes területeknél hiányos lehet a lefedettség.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+{% endblock %}

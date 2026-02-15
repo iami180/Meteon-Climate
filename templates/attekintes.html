@@ -1,0 +1,232 @@
+﻿{% extends "base.html" %}
+
+{% block content %}
+<section class="section container fade-up">
+  <h1>Áttekintés</h1>
+  <p class="muted">
+    Gyors riport a kiválasztott év klímaindikátorairól, összehasonlítási nézettel.
+  </p>
+
+  <div class="controls">
+    <div class="control">
+      Év
+      <select id="yearSelect"></select>
+    </div>
+    <div class="control">
+      Összehasonlítás
+      <select id="compareSelect"></select>
+    </div>
+  </div>
+
+  <div class="card compare">
+    <div>
+      <div class="muted">Kiválasztott év</div>
+      <div class="value" id="selectedYear">2024</div>
+    </div>
+    <div>
+      <div class="muted">Összehasonlított év</div>
+      <div class="value" id="compareYear">1990</div>
+    </div>
+    <div>
+      <div class="muted">Δ hőmérséklet</div>
+      <div class="value delta" id="deltaTemp">—</div>
+    </div>
+  </div>
+</section>
+
+<section class="section container">
+  <div class="grid grid-3">
+    <div class="card">
+      <h3>Globális átlag</h3>
+      <div class="value" id="globalValue">—</div>
+      <div class="muted">Világ éves átlag</div>
+    </div>
+    <div class="card">
+      <h3>Éves hőingás</h3>
+      <div class="value" id="annualRange">—</div>
+      <div class="muted">max havi átlag – min havi átlag</div>
+    </div>
+    <div class="card">
+      <h3>Legmelegebb kontinens</h3>
+      <div class="value" id="warmestName">—</div>
+      <div class="muted" id="warmestValue">—</div>
+    </div>
+  </div>
+</section>
+
+<section class="section container">
+  <div class="grid grid-2">
+    <div class="card">
+      <h3>Leghűvösebb kontinens</h3>
+      <div class="value" id="coldestName">—</div>
+      <div class="muted" id="coldestValue">—</div>
+    </div>
+    <div class="chart-wrap">
+      <h3 id="continentTitle">Kontinensek éves átlaga</h3>
+      <canvas id="continentChart" height="180"></canvas>
+    </div>
+  </div>
+</section>
+
+<section class="section container">
+  <div class="card" id="overviewNarrative">
+    <h3>Mit látunk az adatokból?</h3>
+    <p class="muted" id="overviewText">Adatok betöltése…</p>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  const SEO_INITIAL_YEAR = {{ initial_year | default(None) | tojson }};
+  const SEO_INITIAL_COMPARE = {{ initial_compare | default(None) | tojson }};
+  const yearSelect = document.getElementById("yearSelect");
+  const compareSelect = document.getElementById("compareSelect");
+  const selectedYear = document.getElementById("selectedYear");
+  const compareYear = document.getElementById("compareYear");
+  const deltaTemp = document.getElementById("deltaTemp");
+  const globalValue = document.getElementById("globalValue");
+  const annualRange = document.getElementById("annualRange");
+  const warmestName = document.getElementById("warmestName");
+  const warmestValue = document.getElementById("warmestValue");
+  const coldestName = document.getElementById("coldestName");
+  const coldestValue = document.getElementById("coldestValue");
+  const continentTitle = document.getElementById("continentTitle");
+  const overviewText = document.getElementById("overviewText");
+  const labels = {
+    World: "Világ",
+    Europe: "Európa",
+    Asia: "Ázsia",
+    Africa: "Afrika",
+    "North America": "Észak-Amerika",
+    "South America": "Dél-Amerika",
+    "Australia and Oceania": "Ausztrália és Óceánia",
+    Antarctica: "Antarktisz",
+  };
+
+  function labelFor(entity) {
+    return labels[entity] || entity;
+  }
+
+  const ctx = document.getElementById("continentChart");
+  const chart = new Chart(ctx, {
+    type: "bar",
+    data: { labels: [], datasets: [{ label: "Éves átlag", data: [], borderRadius: 8 }] },
+    options: {
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { grid: { color: "rgba(255,255,255,0.08)" }, ticks: { color: "#b8c7d6" } },
+        x: { ticks: { color: "#b8c7d6" } },
+      },
+    },
+  });
+
+  function fmt(value, unit = "°C", digits = 1) {
+    if (value === null || value === undefined || Number.isNaN(value)) return "—";
+    return `${value.toLocaleString("hu-HU", { maximumFractionDigits: digits })}${unit}`;
+  }
+
+  function fmtSigned(value, unit = "°C", digits = 1) {
+    if (value === null || value === undefined || Number.isNaN(value)) return "—";
+    const sign = value > 0 ? "+" : "";
+    return `${sign}${value.toLocaleString("hu-HU", { maximumFractionDigits: digits })}${unit}`;
+  }
+
+  function fillSelect(select, years, selected) {
+    select.innerHTML = "";
+    years.forEach((year) => {
+      const option = document.createElement("option");
+      option.value = year;
+      option.textContent = year;
+      if (year === selected) option.selected = true;
+      select.appendChild(option);
+    });
+  }
+
+  function updateUrl() {
+    history.replaceState(null, "", `/attekintes/${yearSelect.value}/${compareSelect.value}`);
+  }
+
+  async function loadMeta() {
+    const res = await fetch("/api/meta?metric=temperature");
+    const meta = await res.json();
+    const years = meta.years || [];
+    const latest = years[years.length - 1];
+    const params = new URLSearchParams(window.location.search);
+    const qYear = params.get("year");
+    const qCompare = params.get("compare");
+    const preferredYear = SEO_INITIAL_YEAR ?? Number(qYear);
+    const preferredCompare = SEO_INITIAL_COMPARE ?? Number(qCompare);
+    const selectedYear = years.includes(Number(preferredYear)) ? Number(preferredYear) : latest;
+    const selectedCompare = years.includes(Number(preferredCompare))
+      ? Number(preferredCompare)
+      : years[Math.max(0, years.length - 5)] || latest;
+    fillSelect(yearSelect, years, selectedYear);
+    fillSelect(compareSelect, years, selectedCompare);
+    updateUrl();
+  }
+
+  async function loadOverview() {
+    const year = yearSelect.value;
+    const compare = compareSelect.value;
+    const res = await fetch(`/api/overview?metric=temperature&year=${year}&compare=${compare}`);
+    const data = await res.json();
+
+    selectedYear.textContent = data.selected_year ?? year;
+    compareYear.textContent = data.compare_year ?? compare;
+    deltaTemp.textContent = fmtSigned(data.global?.delta);
+    globalValue.textContent = fmt(data.global?.selected);
+    annualRange.textContent = fmt(data.range?.value);
+    warmestName.textContent = labelFor(data.rank?.warmest?.name) ?? "—";
+    warmestValue.textContent = fmt(data.rank?.warmest?.value);
+    coldestName.textContent = labelFor(data.rank?.coldest?.name) ?? "—";
+    coldestValue.textContent = fmt(data.rank?.coldest?.value);
+    continentTitle.textContent = `Kontinensek éves átlaga (${data.selected_year ?? year})`;
+
+    const labels = (data.continents || []).map((c) => labelFor(c.name));
+    const values = (data.continents || []).map((c) => c.value);
+    chart.data.labels = labels;
+    chart.data.datasets[0].data = values;
+    chart.data.datasets[0].backgroundColor = [
+      "#ffb347",
+      "#55d6be",
+      "#ff6b6b",
+      "#7aa6ff",
+      "#c68cff",
+      "#ffa8a8",
+      "#8be28b",
+    ];
+    chart.update();
+
+    const warmest = data.rank?.warmest;
+    const coldest = data.rank?.coldest;
+    const globalNow = data.global?.selected;
+    const globalThen = data.global?.compare;
+    const delta = data.global?.delta;
+    const range = data.range?.value;
+    const yearText = data.selected_year ?? year;
+    const compareText = data.compare_year ?? compare;
+    overviewText.textContent =
+      `Az áttekintés egy gyors pillanatkép a ${yearText} év globális hőmérsékleti helyzetéről, ` +
+      `és összeveti azt a ${compareText} évvel. A globális átlag ebben az évben ${fmt(globalNow)} körül alakul, ` +
+      `miközben a referenciaévhez képest a változás ${fmtSigned(delta)}. ` +
+      `A hónapok közötti kilengés (éves hőingás) ${fmt(range)}, ami jelzi, hogy a szezonális különbségek ` +
+      `mennyire markánsak. A kontinensek közül a legmelegebb jelenleg ${labelFor(warmest?.name) ?? "—"} ` +
+      `(${fmt(warmest?.value)}), míg a leghűvösebb ${labelFor(coldest?.name) ?? "—"} (${fmt(coldest?.value)}). ` +
+      `Ezek az értékek együtt segítenek abban, hogy ne csak egyetlen számot lássunk, hanem azt is, ` +
+      `hogy a melegedés hogyan oszlik meg a régiók között, és mennyire egyenlőtlen a változás.`; 
+  }
+
+  yearSelect.addEventListener("change", () => {
+    updateUrl();
+    loadOverview();
+  });
+  compareSelect.addEventListener("change", () => {
+    updateUrl();
+    loadOverview();
+  });
+
+  loadMeta().then(loadOverview);
+</script>
+{% endblock %}

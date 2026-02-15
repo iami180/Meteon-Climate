@@ -1,0 +1,221 @@
+﻿{% extends "base.html" %}
+
+{% block content %}
+<section class="section container fade-up">
+  <h1>CO₂-kibocsátás</h1>
+  <p class="muted">Kibocsátási adatok és összehasonlítások a kiválasztott évben.</p>
+
+  <div class="controls">
+    <div class="control">
+      Év
+      <select id="co2Year"></select>
+    </div>
+    <div class="control">
+      Kontinens
+      <select id="co2Entity"></select>
+    </div>
+  </div>
+
+  <div class="grid grid-3">
+    <div class="card">
+      <h3>Éves összkibocsátás</h3>
+      <div class="value" id="co2Global">—</div>
+      <div class="muted">globális összesen</div>
+    </div>
+    <div class="card">
+      <h3>Kiválasztott kontinens</h3>
+      <div class="value" id="co2TopName">—</div>
+      <div class="muted" id="co2TopValue">—</div>
+    </div>
+    <div class="card">
+      <h3>Per fő kibocsátás</h3>
+      <div class="value" id="co2PerCapitaValue">N/A</div>
+      <div class="muted" id="co2PerCapitaNote">nem elérhető az OWID forrásból</div>
+    </div>
+  </div>
+</section>
+
+<section class="section container">
+  <div class="grid grid-2">
+    <div class="chart-wrap">
+      <h3 id="co2ContinentTitle">Kontinensek CO₂ összehasonlítása</h3>
+      <canvas id="co2Chart" height="180"></canvas>
+    </div>
+    <div class="card">
+      <h3>Top kibocsátók (régiók)</h3>
+      <div class="muted">Kontinensek rangsora a kiválasztott évben.</div>
+      <div class="grid" id="co2TopList" style="margin-top: 12px; gap: 10px"></div>
+    </div>
+  </div>
+</section>
+
+<section class="section container">
+  <div class="card">
+    <h3>Értelmezés</h3>
+    <p class="muted" id="co2Narrative">Adatok betöltése…</p>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  const SEO_INITIAL_YEAR = {{ initial_year | default(None) | tojson }};
+  const SEO_INITIAL_ENTITY_SLUG = {{ initial_entity_slug | default(None) | tojson }};
+  const co2Year = document.getElementById("co2Year");
+  const co2Entity = document.getElementById("co2Entity");
+  const co2Global = document.getElementById("co2Global");
+  const co2TopName = document.getElementById("co2TopName");
+  const co2TopValue = document.getElementById("co2TopValue");
+  const co2PerCapitaValue = document.getElementById("co2PerCapitaValue");
+  const co2PerCapitaNote = document.getElementById("co2PerCapitaNote");
+  const co2TopList = document.getElementById("co2TopList");
+  const co2ContinentTitle = document.getElementById("co2ContinentTitle");
+  const co2Narrative = document.getElementById("co2Narrative");
+  const labels = {
+    World: "Világ",
+    Europe: "Európa",
+    Asia: "Ázsia",
+    Africa: "Afrika",
+    "North America": "Észak-Amerika",
+    "South America": "Dél-Amerika",
+    "Australia and Oceania": "Ausztrália és Óceánia",
+    Antarctica: "Antarktisz",
+  };
+
+  function labelFor(entity) {
+    return labels[entity] || entity;
+  }
+
+  function entityToSlug(entity) {
+    return (entity || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  }
+
+  function slugToEntity(slug, entities) {
+    if (!slug) return null;
+    const normalized = slug.toLowerCase();
+    return entities.find((entity) => entityToSlug(entity) === normalized) || null;
+  }
+
+  const co2Chart = document.getElementById("co2Chart");
+  const continentChart = new Chart(co2Chart, {
+    type: "bar",
+    data: {
+      labels: [],
+      datasets: [{ label: "CO₂ kibocsátás (Gt)", data: [], backgroundColor: "#ff6b6b", borderRadius: 8 }],
+    },
+    options: {
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { ticks: { color: "#b8c7d6" }, grid: { color: "rgba(255,255,255,0.08)" } },
+        x: { ticks: { color: "#b8c7d6" } },
+      },
+    },
+  });
+
+  function co2Scale(value) {
+    if (value === null || value === undefined || Number.isNaN(value)) return null;
+    return value / 1e9;
+  }
+
+  function fmt(value) {
+    if (value === null || value === undefined || Number.isNaN(value)) return "—";
+    const scaled = co2Scale(value);
+    return `${scaled.toLocaleString("hu-HU", { maximumFractionDigits: 2 })} Gt`;
+  }
+
+  function fillSelect(select, values, selected, labelFn = (v) => v) {
+    select.innerHTML = "";
+    values.forEach((value) => {
+      const option = document.createElement("option");
+      option.value = value;
+      option.textContent = labelFn(value);
+      if (value === selected) option.selected = true;
+      select.appendChild(option);
+    });
+  }
+
+  function updateUrl() {
+    const year = co2Year.value;
+    const entitySlug = entityToSlug(co2Entity.value);
+    history.replaceState(null, "", `/co2/${year}/${entitySlug}`);
+  }
+
+  async function loadMeta() {
+    const res = await fetch("/api/meta?metric=co2");
+    const meta = await res.json();
+    const years = meta.years || [];
+    const latest = years[years.length - 1];
+    const params = new URLSearchParams(window.location.search);
+    const qYear = params.get("year");
+    const qEntity = params.get("entity");
+    const preferredYear = SEO_INITIAL_YEAR ?? Number(qYear);
+    const selectedYear = years.includes(Number(preferredYear)) ? Number(preferredYear) : latest;
+    fillSelect(co2Year, years, selectedYear);
+    const entities = meta.continents || [];
+    const entityFromSlug = slugToEntity(SEO_INITIAL_ENTITY_SLUG, entities);
+    const selectedEntity = entityFromSlug || (entities.includes(qEntity) ? qEntity : (entities.includes("Asia") ? "Asia" : entities[0]));
+    fillSelect(co2Entity, entities, selectedEntity, labelFor);
+    updateUrl();
+  }
+
+  async function loadContinents() {
+    const year = co2Year.value;
+    const res = await fetch(`/api/co2/continents?year=${year}`);
+    const data = await res.json();
+    const rows = data.data || [];
+    const chartRows = rows.filter((c) => c.entity !== "World");
+    const labels = chartRows.map((c) => labelFor(c.entity));
+    const values = chartRows.map((c) => co2Scale(c.value) ?? 0);
+    continentChart.data.labels = labels;
+    continentChart.data.datasets[0].data = values;
+    continentChart.update();
+    co2ContinentTitle.textContent = `Kontinensek CO₂ összehasonlítása (${year})`;
+
+    const overviewRes = await fetch(`/api/co2/overview?year=${year}&entity=${encodeURIComponent(co2Entity.value)}`);
+    const overview = await overviewRes.json();
+    co2Global.textContent = fmt(overview?.global?.selected);
+    const perCapita = overview?.per_capita ?? null;
+    const perCapitaText = perCapita === null ? "N/A" : `${perCapita.toLocaleString("hu-HU", { maximumFractionDigits: 3 })} t/fő`;
+    co2PerCapitaValue.textContent = perCapitaText;
+    co2PerCapitaNote.textContent =
+      perCapita === null ? "nem elérhető az OWID forrásból" : "számított érték (CO₂ / népesség)";
+    const sorted = chartRows.sort((a, b) => b.value - a.value);
+    const selected = sorted.find((r) => r.entity === co2Entity.value);
+    co2TopName.textContent = labelFor(selected?.entity) ?? "—";
+    co2TopValue.textContent = fmt(selected?.value);
+
+    co2TopList.innerHTML = "";
+    sorted.slice(0, 5).forEach((item, index) => {
+      const div = document.createElement("div");
+      div.className = "card";
+      div.style.padding = "12px";
+      div.style.background = "#162833";
+      div.textContent = `${index + 1}. ${labelFor(item.entity)} – ${fmt(item.value)}`;
+      co2TopList.appendChild(div);
+    });
+
+    const top = sorted[0];
+    const bottom = sorted[sorted.length - 1];
+    co2Narrative.textContent =
+      `A ${year} év CO₂-kibocsátási képe alapján a kontinensek között nagy eltérések láthatók. ` +
+      `A legnagyobb kibocsátó ${labelFor(top?.entity) ?? "—"} (${fmt(top?.value)}), míg a legalacsonyabb érték ` +
+      `${labelFor(bottom?.entity) ?? "—"} régióban jelenik meg (${fmt(bottom?.value)}). A kiválasztott kontinens ` +
+      `(${labelFor(co2Entity.value)}) kibocsátása ${fmt(selected?.value)}. A per fő érték pedig ` +
+      `${co2PerCapitaValue.textContent}, ami a kibocsátás és a népesség arányát mutatja. ` +
+      `Ezek az adatok segítenek megérteni, hogy a teljes kibocsátás és az egy főre jutó terhelés ` +
+      `nem mindig ugyanazt a képet mutatja.`; 
+  }
+
+  co2Year.addEventListener("change", () => {
+    updateUrl();
+    loadContinents();
+  });
+  co2Entity.addEventListener("change", () => {
+    updateUrl();
+    loadContinents();
+  });
+
+  loadMeta().then(loadContinents);
+</script>
+{% endblock %}

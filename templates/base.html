@@ -1,0 +1,106 @@
+﻿<!doctype html>
+<html lang="hu">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Meteon – Klíma adatok vizualizációja</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Sora:wght@300;400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico', v='2') }}" />
+    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico', v='2') }}" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+    {% block head %}{% endblock %}
+  </head>
+  <body>
+    <nav class="nav">
+      <div class="container nav-inner">
+        <a class="brand" href="/">
+          <img class="brand-logo" src="{{ url_for('static', filename='josvglogo.svg') }}" alt="Meteon logo" />
+          <span class="brand-text">
+            <span class="brand-title">Meteon</span>
+            <span class="brand-subtitle">climate</span>
+          </span>
+        </a>
+        <select class="nav-dropdown" id="navDropdown" aria-label="Oldalválasztó">
+          <option value="/">Főoldal</option>
+          <option value="/attekintes">Áttekintés</option>
+          <option value="/foldfelmelegedes/felmelegedes">Föld felmelegedése - Felmelegedés</option>
+          <option value="/foldfelmelegedes/elorejelzes">Föld felmelegedése - Előrejelzés</option>
+          <option value="/homerseklet">Hőmérséklet</option>
+          <option value="/csapadek">Csapadék</option>
+          <option value="/co2">CO₂</option>
+          <option value="/co2-kalkulator">CO₂ kalkulátor</option>
+          <option value="/terkep">Térkép</option>
+          <option value="/adatok">Adatok</option>
+        </select>
+        <div class="nav-links" id="mainNav">
+          <a href="/attekintes">Áttekintés</a>
+          <div class="nav-group">
+            <button class="nav-group-title" id="warmingMenuBtn" type="button" aria-expanded="false" aria-controls="warmingSubmenu">
+              Föld felmelegedése
+            </button>
+            <div class="nav-submenu" id="warmingSubmenu">
+              <a href="/foldfelmelegedes/felmelegedes">Felmelegedés</a>
+              <a href="/foldfelmelegedes/elorejelzes">Előrejelzés</a>
+            </div>
+          </div>
+          <a href="/homerseklet">Hőmérséklet</a>
+          <a href="/csapadek">Csapadék</a>
+          <a href="/co2">CO₂</a>
+          <a href="/co2-kalkulator">CO₂ kalkulátor</a>
+          <a href="/terkep">Térkép</a>
+          <a href="/adatok">Adatok</a>
+        </div>
+      </div>
+    </nav>
+    {% block content %}{% endblock %}
+    <footer class="footer container">
+      Meteon climate – globális klímaindikátorok és előrejelzések áttekintése.
+    </footer>
+    <script>
+      (() => {
+        const dropdown = document.getElementById("navDropdown");
+        if (dropdown) {
+          const path = window.location.pathname || "/";
+          const selectedOption = Array.from(dropdown.options).find(
+            (o) => path === o.value || path.startsWith(`${o.value}/`),
+          );
+          if (selectedOption) {
+            dropdown.value = selectedOption.value;
+          }
+          dropdown.addEventListener("change", () => {
+            if (dropdown.value) window.location.href = dropdown.value;
+          });
+        }
+
+        const menuBtn = document.getElementById("warmingMenuBtn");
+        const navGroup = menuBtn?.closest(".nav-group");
+        if (!menuBtn || !navGroup) return;
+
+        menuBtn.addEventListener("click", () => {
+          const isOpen = navGroup.classList.toggle("open");
+          menuBtn.setAttribute("aria-expanded", String(isOpen));
+        });
+
+        document.addEventListener("click", (event) => {
+          if (!navGroup.contains(event.target)) {
+            navGroup.classList.remove("open");
+            menuBtn.setAttribute("aria-expanded", "false");
+          }
+        });
+
+        document.addEventListener("keydown", (event) => {
+          if (event.key === "Escape") {
+            navGroup.classList.remove("open");
+            menuBtn.setAttribute("aria-expanded", "false");
+          }
+        });
+      })();
+    </script>
+    {% block scripts %}{% endblock %}
+  </body>
+</html>

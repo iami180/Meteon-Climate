@@ -1,0 +1,180 @@
+﻿{% extends "base.html" %}
+
+{% block content %}
+<section class="section container fade-up">
+  <h1>Csapadék</h1>
+  <p class="muted">Csapadék mutatók és eloszlások a kiválasztott évben.</p>
+
+  <div class="controls">
+    <div class="control">
+      Év
+      <select id="rainYear"></select>
+    </div>
+    <div class="control">
+      Kontinens
+      <select id="rainEntity"></select>
+    </div>
+  </div>
+
+  <div class="grid grid-3">
+    <div class="card">
+      <h3>Éves összcsapadék</h3>
+      <div class="value" id="rainAnnual">—</div>
+      <div class="muted">kontinens átlag</div>
+    </div>
+    <div class="card">
+      <h3>Legcsapadékosabb kontinens</h3>
+      <div class="value" id="rainWetContinent">—</div>
+      <div class="muted" id="rainWetValue">—</div>
+    </div>
+    <div class="card">
+      <h3>Legszárazabb kontinens</h3>
+      <div class="value" id="rainDryContinent">—</div>
+      <div class="muted" id="rainDryValue">—</div>
+    </div>
+  </div>
+</section>
+
+<section class="section container">
+  <div class="grid grid-2">
+    <div class="chart-wrap">
+      <h3 id="rainContinentTitle">Kontinensek csapadék összevetése</h3>
+      <canvas id="rainChart" height="180"></canvas>
+    </div>
+    <div class="card">
+      <h3>Éves megjegyzés</h3>
+      <p class="muted">
+        Ez az oldal csak éves csapadék adatokat használ, havi bontás nélkül.
+      </p>
+    </div>
+  </div>
+</section>
+
+<section class="section container">
+  <div class="card">
+    <h3>Értelmezés</h3>
+    <p class="muted" id="rainNarrative">Adatok betöltése…</p>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  const rainYear = document.getElementById("rainYear");
+  const rainEntity = document.getElementById("rainEntity");
+  const rainAnnual = document.getElementById("rainAnnual");
+  const rainWetContinent = document.getElementById("rainWetContinent");
+  const rainWetValue = document.getElementById("rainWetValue");
+  const rainDryContinent = document.getElementById("rainDryContinent");
+  const rainDryValue = document.getElementById("rainDryValue");
+  const rainContinentTitle = document.getElementById("rainContinentTitle");
+  const rainNarrative = document.getElementById("rainNarrative");
+  const labels = {
+    World: "Világ",
+    Europe: "Európa",
+    Asia: "Ázsia",
+    Africa: "Afrika",
+    "North America": "Észak-Amerika",
+    "South America": "Dél-Amerika",
+    "Australia and Oceania": "Ausztrália és Óceánia",
+    Antarctica: "Antarktisz",
+  };
+
+  function labelFor(entity) {
+    return labels[entity] || entity;
+  }
+
+  const rainChart = document.getElementById("rainChart");
+  const continentChart = new Chart(rainChart, {
+    type: "bar",
+    data: {
+      labels: [],
+      datasets: [{ label: "Éves csapadék (mm)", data: [], backgroundColor: "#7aa6ff", borderRadius: 8 }],
+    },
+    options: {
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { ticks: { color: "#b8c7d6" }, grid: { color: "rgba(255,255,255,0.08)" } },
+        x: { ticks: { color: "#b8c7d6" } },
+      },
+    },
+  });
+
+  function fmt(value, unit = " mm", digits = 0) {
+    if (value === null || value === undefined || Number.isNaN(value)) return "—";
+    return `${value.toLocaleString("hu-HU", { maximumFractionDigits: digits })}${unit}`;
+  }
+
+  function fillSelect(select, values, selected, labelFn = (v) => v) {
+    select.innerHTML = "";
+    values.forEach((value) => {
+      const option = document.createElement("option");
+      option.value = value;
+      option.textContent = labelFn(value);
+      if (value === selected) option.selected = true;
+      select.appendChild(option);
+    });
+  }
+
+  async function loadMeta() {
+    const res = await fetch("/api/meta?metric=precipitation");
+    const meta = await res.json();
+    const years = meta.years || [];
+    const latest = years[years.length - 1];
+    fillSelect(rainYear, years, latest);
+    const entities = meta.continents || [];
+    fillSelect(rainEntity, entities, entities.includes("Europe") ? "Europe" : entities[0], labelFor);
+  }
+
+  async function loadContinents() {
+    const year = rainYear.value;
+    const res = await fetch(`/api/precipitation/continents?year=${year}`);
+    const data = await res.json();
+    const rows = (data.data || []).filter((c) => c.entity !== "World");
+    const labels = rows.map((c) => labelFor(c.entity));
+    const values = rows.map((c) => c.value);
+    continentChart.data.labels = labels;
+    continentChart.data.datasets[0].data = values;
+    continentChart.update();
+    rainContinentTitle.textContent = `Kontinensek csapadék összevetése (${year})`;
+
+    const sorted = rows.slice().sort((a, b) => b.value - a.value);
+    const wettest = sorted[0];
+    const driest = sorted[sorted.length - 1];
+    rainWetContinent.textContent = labelFor(wettest?.entity) ?? "—";
+    rainWetValue.textContent = fmt(wettest?.value);
+    rainDryContinent.textContent = labelFor(driest?.entity) ?? "—";
+    rainDryValue.textContent = fmt(driest?.value);
+
+    rainNarrative.textContent =
+      `A csapadék éves összehasonlítása a ${year} évre mutatja meg, mely kontinensek a legnedvesebbek ` +
+      `és melyek a legszárazabbak. Ebben az évben a legmagasabb éves átlag ${labelFor(wettest?.entity) ?? "—"} ` +
+      `térségben látható (${fmt(wettest?.value)}), míg a legalacsonyabb érték ${labelFor(driest?.entity) ?? "—"} ` +
+      `régióhoz köthető (${fmt(driest?.value)}). A kiválasztott kontinens (${labelFor(rainEntity.value)}) éves átlaga ` +
+      `${fmt((rows.find((r) => r.entity === rainEntity.value) || {}).value)}. Ez az összehasonlítás segít ` +
+      `abban, hogy a csapadékmintázatokat nagy léptékben értelmezzük, és észrevegyük a szélsőséges ` +
+      `nedves vagy száraz régiókat.`; 
+  }
+
+  async function loadAnnualForEntity() {
+    const year = rainYear.value;
+    const entity = rainEntity.value;
+    const yearlyRes = await fetch(`/api/precipitation/continents?year=${year}`);
+    const yearlyData = await yearlyRes.json();
+    const entityValue = (yearlyData.data || []).find((e) => e.entity === entity)?.value ?? null;
+    rainAnnual.textContent = fmt(entityValue);
+  }
+
+  rainYear.addEventListener("change", () => {
+    loadContinents();
+    loadAnnualForEntity();
+  });
+  rainEntity.addEventListener("change", loadAnnualForEntity);
+
+  loadMeta().then(() => {
+    loadContinents();
+    loadAnnualForEntity();
+  });
+</script>
+{% endblock %}

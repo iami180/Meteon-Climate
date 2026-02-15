@@ -1,0 +1,66 @@
+﻿<!doctype html>
+<html lang="hu">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ClimateScope – Klíma adatok vizualizációja</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Sora:wght@300;400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+    {% block head %}{% endblock %}
+  </head>
+  <body>
+    <nav class="nav">
+      <div class="container nav-inner">
+        <a class="brand" href="/">
+          <span class="dot"></span>
+          ClimateScope
+        </a>
+        <select class="nav-dropdown" id="navDropdown" aria-label="Oldalválasztó">
+          <option value="/">Főoldal</option>
+          <option value="/attekintes">Áttekintés</option>
+          <option value="/foldfelmelegedes">Föld felmelegedése</option>
+          <option value="/homerseklet">Hőmérséklet</option>
+          <option value="/csapadek">Csapadék</option>
+          <option value="/co2">CO₂</option>
+          <option value="/co2-kalkulator">CO₂ kalkulátor</option>
+          <option value="/terkep">Térkép</option>
+          <option value="/adatok">Adatok</option>
+        </select>
+        <div class="nav-links" id="mainNav">
+          <a href="/attekintes">Áttekintés</a>
+          <a href="/foldfelmelegedes">Föld felmelegedése</a>
+          <a href="/homerseklet">Hőmérséklet</a>
+          <a href="/csapadek">Csapadék</a>
+          <a href="/co2">CO₂</a>
+          <a href="/co2-kalkulator">CO₂ kalkulátor</a>
+          <a href="/terkep">Térkép</a>
+          <a href="/adatok">Adatok</a>
+        </div>
+      </div>
+    </nav>
+    {% block content %}{% endblock %}
+    <footer class="footer container">
+      ClimateScope – demonstrációs felület, helyőrző adatokkal.
+    </footer>
+    <script>
+      (() => {
+        const dropdown = document.getElementById("navDropdown");
+        if (!dropdown) return;
+        const path = window.location.pathname || "/";
+        const known = Array.from(dropdown.options).some((o) => o.value === path);
+        if (known) {
+          dropdown.value = path;
+        }
+        dropdown.addEventListener("change", () => {
+          if (dropdown.value) window.location.href = dropdown.value;
+        });
+      })();
+    </script>
+    {% block scripts %}{% endblock %}
+  </body>
+</html>

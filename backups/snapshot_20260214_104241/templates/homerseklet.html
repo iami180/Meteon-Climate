@@ -1,0 +1,218 @@
+﻿{% extends "base.html" %}
+
+{% block content %}
+<section class="section container fade-up">
+  <h1>Hőmérséklet</h1>
+  <p class="muted">Részletes hőmérsékleti mutatók a kiválasztott évre és kontinensre.</p>
+
+  <div class="controls">
+    <div class="control">
+      Év
+      <select id="tempYear"></select>
+    </div>
+    <div class="control">
+      Kontinens
+      <select id="tempEntity"></select>
+    </div>
+  </div>
+
+  <div class="grid grid-3">
+    <div class="card">
+      <h3>Éves átlag</h3>
+      <div class="value" id="tempAnnualAvg">—</div>
+      <div class="muted">kontinens átlag</div>
+    </div>
+    <div class="card">
+      <h3>Éves hőingás</h3>
+      <div class="value" id="tempAnnualRange">—</div>
+      <div class="muted">max − min havi átlag</div>
+    </div>
+    <div class="card">
+      <h3>Legmelegebb hónap</h3>
+      <div class="value" id="tempWarmestMonth">—</div>
+      <div class="muted" id="tempWarmestValue">—</div>
+    </div>
+  </div>
+</section>
+
+<section class="section container">
+  <div class="grid grid-2">
+    <div class="chart-wrap">
+      <h3 id="tempContinentTitle">Kontinensek összehasonlítása</h3>
+      <canvas id="tempChart" height="180"></canvas>
+    </div>
+    <div class="chart-wrap">
+      <h3 id="tempMonthlyTitle">Havi eloszlás</h3>
+      <canvas id="tempMonthly" height="180"></canvas>
+    </div>
+  </div>
+</section>
+
+<section class="section container">
+  <div class="card">
+    <h3>Magyarázat</h3>
+    <p class="muted" id="tempNarrative">Adatok betöltése…</p>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  const tempYear = document.getElementById("tempYear");
+  const tempEntity = document.getElementById("tempEntity");
+  const tempAnnualAvg = document.getElementById("tempAnnualAvg");
+  const tempAnnualRange = document.getElementById("tempAnnualRange");
+  const tempWarmestMonth = document.getElementById("tempWarmestMonth");
+  const tempWarmestValue = document.getElementById("tempWarmestValue");
+  const tempContinentTitle = document.getElementById("tempContinentTitle");
+  const tempMonthlyTitle = document.getElementById("tempMonthlyTitle");
+  const tempNarrative = document.getElementById("tempNarrative");
+  const labels = {
+    World: "Világ",
+    Europe: "Európa",
+    Asia: "Ázsia",
+    Africa: "Afrika",
+    "North America": "Észak-Amerika",
+    "South America": "Dél-Amerika",
+    "Australia and Oceania": "Ausztrália és Óceánia",
+    Antarctica: "Antarktisz",
+  };
+
+  function labelFor(entity) {
+    return labels[entity] || entity;
+  }
+
+  const tempChart = document.getElementById("tempChart");
+  const continentChart = new Chart(tempChart, {
+    type: "bar",
+    data: {
+      labels: [],
+      datasets: [{ label: "Átlaghőmérséklet", data: [], backgroundColor: "#ffb347", borderRadius: 8 }],
+    },
+    options: {
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { ticks: { color: "#b8c7d6" }, grid: { color: "rgba(255,255,255,0.08)" } },
+        x: { ticks: { color: "#b8c7d6" } },
+      },
+    },
+  });
+
+  const tempMonthly = document.getElementById("tempMonthly");
+  const monthlyChart = new Chart(tempMonthly, {
+    type: "bar",
+    data: {
+      labels: ["J", "F", "M", "Á", "M", "J", "J", "A", "S", "O", "N", "D"],
+      datasets: [{ label: "Havi átlag", data: [], backgroundColor: "#55d6be", borderRadius: 8 }],
+    },
+    options: {
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { ticks: { color: "#b8c7d6" }, grid: { color: "rgba(255,255,255,0.08)" } },
+        x: { ticks: { color: "#b8c7d6" } },
+      },
+    },
+  });
+
+  function fmt(value, unit = "°C", digits = 1) {
+    if (value === null || value === undefined || Number.isNaN(value)) return "—";
+    return `${value.toLocaleString("hu-HU", { maximumFractionDigits: digits })}${unit}`;
+  }
+
+  function fillSelect(select, values, selected, labelFn = (v) => v) {
+    select.innerHTML = "";
+    values.forEach((value) => {
+      const option = document.createElement("option");
+      option.value = value;
+      option.textContent = labelFn(value);
+      if (value === selected) option.selected = true;
+      select.appendChild(option);
+    });
+  }
+
+  async function loadMeta() {
+    const res = await fetch("/api/meta?metric=temperature");
+    const meta = await res.json();
+    const years = meta.years || [];
+    const latest = years[years.length - 1];
+    fillSelect(tempYear, years, latest);
+    const entities = meta.continents || [];
+    fillSelect(tempEntity, entities, entities.includes("Europe") ? "Europe" : entities[0], labelFor);
+  }
+
+  async function loadContinents() {
+    const year = tempYear.value;
+    const res = await fetch(`/api/temperature/continents?year=${year}`);
+    const data = await res.json();
+    const rows = (data.data || []).filter((c) => c.entity !== "World");
+    const labels = rows.map((c) => labelFor(c.entity));
+    const values = rows.map((c) => c.value);
+    continentChart.data.labels = labels;
+    continentChart.data.datasets[0].data = values;
+    continentChart.update();
+    tempContinentTitle.textContent = `Kontinensek összehasonlítása (${year})`;
+
+    const sorted = rows.slice().sort((a, b) => b.value - a.value);
+    const warmest = sorted[0];
+    const coldest = sorted[sorted.length - 1];
+    tempNarrative.textContent =
+      `A kiválasztott évben (${year}) a kontinensek átlaghőmérséklete között jelentős különbségek lehetnek. ` +
+      `A legmagasabb értékű régió jelenleg ${labelFor(warmest?.entity) ?? "—"} (${fmt(warmest?.value)}), ` +
+      `míg a legalacsonyabb ${labelFor(coldest?.entity) ?? "—"} (${fmt(coldest?.value)}). ` +
+      `Ez a kontraszt jól mutatja, hogy a globális felmelegedés nem egyformán érinti a Föld különböző részeit, ` +
+      `és egyes régiók gyorsabban melegszenek, míg máshol a változás mérsékeltebb. A trendek értelmezéséhez ` +
+      `érdemes a kiválasztott kontinens havi görbéjét is megnézni, mert abból kirajzolódik a szezonális ritmus.`; 
+  }
+
+  async function loadMonthly() {
+    const year = tempYear.value;
+    const entity = tempEntity.value;
+    const res = await fetch(`/api/temperature/monthly?entity=${encodeURIComponent(entity)}&year=${year}`);
+    const data = await res.json();
+    const monthly = Array(12).fill(null);
+    (data.months || []).forEach((m) => {
+      monthly[m.month - 1] = m.value;
+    });
+    monthlyChart.data.datasets[0].data = monthly.map((v) => (v === null ? 0 : v));
+    monthlyChart.update();
+    tempMonthlyTitle.textContent = `Havi eloszlás (${entity})`;
+
+    const clean = monthly.filter((v) => typeof v === "number");
+    if (clean.length) {
+      const annualAvg = clean.reduce((a, b) => a + b, 0) / clean.length;
+      const annualRange = Math.max(...clean) - Math.min(...clean);
+      let maxVal = null;
+      let maxIdx = null;
+      monthly.forEach((value, index) => {
+        if (typeof value !== "number") return;
+        if (maxVal === null || value > maxVal) {
+          maxVal = value;
+          maxIdx = index;
+        }
+      });
+      tempAnnualAvg.textContent = fmt(annualAvg);
+      tempAnnualRange.textContent = fmt(annualRange);
+      tempWarmestMonth.textContent =
+        ["Jan", "Feb", "Már", "Ápr", "Máj", "Jún", "Júl", "Aug", "Szep", "Okt", "Nov", "Dec"][maxIdx] || "—";
+      tempWarmestValue.textContent = fmt(maxVal);
+    } else {
+      tempAnnualAvg.textContent = "—";
+      tempAnnualRange.textContent = "—";
+      tempWarmestMonth.textContent = "—";
+      tempWarmestValue.textContent = "—";
+    }
+  }
+
+  tempYear.addEventListener("change", () => {
+    loadContinents();
+    loadMonthly();
+  });
+  tempEntity.addEventListener("change", loadMonthly);
+
+  loadMeta().then(() => {
+    loadContinents();
+    loadMonthly();
+  });
+</script>
+{% endblock %}
