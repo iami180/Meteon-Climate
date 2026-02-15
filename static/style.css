@@ -58,23 +58,26 @@ a {
 
 .brand {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 10px;
+  gap: 4px;
   font-weight: 700;
   font-size: 1.15rem;
   letter-spacing: 0.5px;
 }
 
 .brand-logo {
-  width: 64px;
-  height: 64px;
+  width: 100px;
+  height: 100px;
   object-fit: contain;
+  display: block;
 }
 
 .brand-text {
   display: flex;
   flex-direction: column;
   line-height: 1.05;
+  align-items: center;
 }
 
 .brand-title {
@@ -438,12 +441,12 @@ a {
 
   .brand {
     font-size: 1rem;
-    gap: 8px;
+    gap: 3px;
   }
 
   .brand-logo {
-    width: 52px;
-    height: 52px;
+    width: 78px;
+    height: 78px;
   }
 
   .brand-title {
