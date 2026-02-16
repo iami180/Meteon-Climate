@@ -22,14 +22,14 @@
 <section class="section container">
   <div class="grid grid-2">
     <div class="card">
-      <h3>tlagos globális érték</h3>
+      <h3>Átlagos globális érték</h3>
       <div class="value" id="avgGlobal">—</div>
       <div class="muted">Kiválasztott időszak átlaga</div>
     </div>
     <div class="card">
       <h3>Változás</h3>
       <div class="value" id="deltaGlobal">—</div>
-      <div class="muted">Első vs. utolsó év</div>
+      <div class="muted">Első és utolsó év</div>
     </div>
     <div class="card">
       <h3>Legmelegebb év (globális)</h3>
@@ -228,9 +228,20 @@
   }
 
   async function loadTrend() {
-    const start = parseInt(startYear.value, 10);
-    const end = parseInt(endYear.value, 10);
-    const res = await fetch(`/api/metric/year?metric=temperature&year=${end}`);
+    let start = parseInt(startYear.value, 10);
+    let end = parseInt(endYear.value, 10);
+    if (start > end) {
+      if (document.activeElement === startYear) {
+        end = start;
+        endYear.value = String(end);
+      } else if (document.activeElement === endYear) {
+        start = end;
+        startYear.value = String(start);
+      } else {
+        end = start;
+        endYear.value = String(end);
+      }
+    }
     const metaRes = await fetch("/api/meta?metric=temperature");
     const meta = await metaRes.json();
     const years = (meta.years || []).filter((y) => y >= start && y <= end);

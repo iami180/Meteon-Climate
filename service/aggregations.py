@@ -15,6 +15,8 @@ AGGREGATION = {
 
 
 def continent_of(entity: str) -> Optional[str]:
+    if entity in {"Oceania", "Oceania (NIAID)"}:
+        return "Australia and Oceania"
     if entity in CONTINENTS:
         return entity
     load_country_map()

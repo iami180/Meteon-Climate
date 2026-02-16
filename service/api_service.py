@@ -145,7 +145,7 @@ def overview_response(metric: str, year: int, compare: int) -> Tuple[Dict[str, A
             "selected_year": year,
             "compare_year": compare,
             "global": {"selected": selected_val, "compare": compare_val, "delta": delta},
-            "range": {"value": range_value, "definition": "max(havi atlag) - min(havi atlag)"},
+            "range": {"value": range_value, "definition": "max(havi átlag) - min(havi átlag)"},
             "continents": continents,
             "rank": {"warmest": warmest, "coldest": coldest},
         },

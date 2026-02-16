@@ -8,7 +8,7 @@ from typing import Optional, Tuple
 
 import requests
 
-from .config import CHARTS, CONTINENTS, MAX_YEAR, POPULATION_CHART, RAW_DIR
+from .config import CHARTS, MAX_YEAR, POPULATION_CHART, RAW_DIR
 from .store import (
     COUNTRY_MAP_LOADED,
     COUNTRY_TO_CONTINENT,
@@ -18,6 +18,15 @@ from .store import (
     touch_access,
 )
 from .store import reset_store
+
+
+def normalize_entity_name(entity: str) -> str:
+    entity = (entity or "Unknown").strip()
+    if entity.endswith(" (NIAID)"):
+        entity = entity.replace(" (NIAID)", "")
+    if entity == "Oceania":
+        return "Australia and Oceania"
+    return entity
 
 
 def parse_year_month(value: str) -> Tuple[Optional[int], Optional[int]]:
@@ -70,11 +79,8 @@ def load_csv_text(csv_text: str, metric: str) -> None:
     yearly = STORE.yearly[metric]
     for row in reader:
         entity = row.get("Entity") or row.get("entity") or "Unknown"
+        entity = normalize_entity_name(entity)
         code = (row.get("Code") or row.get("code") or "").strip()
-        if entity.endswith(" (NIAID)"):
-            base = entity.replace(" (NIAID)", "")
-            if base in CONTINENTS:
-                entity = base
         if len(code) == 3 and code.isalpha():
             STORE.entity_codes.setdefault(entity, code.upper())
         year_raw = row.get(date_col, "") or ""
@@ -188,6 +194,7 @@ def ensure_population_loaded() -> None:
         value_col = reader.fieldnames[-1]
         for row in reader:
             entity = row.get("Entity") or row.get("entity") or "Unknown"
+            entity = normalize_entity_name(entity)
             year_raw = row.get("Year") or row.get("year") or ""
             value_raw = row.get(value_col, "")
             if value_raw in ("", None):
