@@ -1,25 +1,25 @@
 # Meteon-Climate
 
-Interactive climate data visualization web app built with Flask.
+Interaktív klímaadat-vizualizációs webalkalmazás Flask alapon.
 
-## Live
+## Elérés
 - https://climate.meteon.hu
 
-## Main features
-- Temperature trends by year and continent
-- Precipitation overview and monthly distribution
-- CO2 emission comparison
-- Warming trend and forecast view
-- Map-based visualization
-- CO2 calculator
+## Fő funkciók
+- Hőmérsékleti trendek év és kontinens szerint
+- Csapadék adatok és havi eloszlás
+- CO2-kibocsátás összehasonlítása
+- Felmelegedési trend és előrejelzés
+- Térképes megjelenítés
+- CO2 kalkulátor
 
-## Tech stack
+## Technológiai stack
 - Python, Flask
 - HTML, CSS, JavaScript
 - Chart.js (CDN)
-- Our World in Data datasets
+- Our World in Data adatok
 
-## Local run (optional)
+## Futtatás lokálisan (opcionális)
 ```bash
 python -m venv .venv
 .venv\Scripts\activate
@@ -27,9 +27,9 @@ pip install -r requirements.txt
 python app.py
 ```
 
-Open: `http://127.0.0.1:5000`
+Megnyitás: `http://127.0.0.1:5000`
 
-## API endpoints (short)
+## API végpontok (röviden)
 - `GET /api/meta?metric=temperature|precipitation|co2`
 - `GET /api/overview?metric=...&year=...&compare=...`
 - `GET /api/metric/year?metric=...&year=...`
@@ -45,5 +45,5 @@ Open: `http://127.0.0.1:5000`
 - `GET /api/co2/overview?year=...&compare=...&entity=...`
 - `POST /admin/refresh`
 
-## Rights
-`Copyright 2026 climate.meteon.hu. All rights reserved.`
+## Jogi nyilatkozat
+`© 2026 climate.meteon.hu – Minden jog fenntartva.`
