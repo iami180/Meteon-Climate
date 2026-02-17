@@ -1,25 +1,25 @@
-# climate.meteon.hu
+# Meteon-Climate
 
-Interaktív klímaadat-vizualizációs webalkalmazás Flask alapon.
+Interactive climate data visualization web app built with Flask.
 
-## Elérés
-- Éles verzió: `https://climate.meteon.hu`
+## Live
+- https://climate.meteon.hu
 
-## Fő funkciók
-- Globális és kontinens szintű hőmérsékleti adatok
-- Csapadék trendek és havi bontás
-- CO2-kibocsátás összehasonlítás
-- Felmelegedési trend és előrejelzés
-- Térképes megjelenítés
-- CO2 kalkulátor
+## Main features
+- Temperature trends by year and continent
+- Precipitation overview and monthly distribution
+- CO2 emission comparison
+- Warming trend and forecast view
+- Map-based visualization
+- CO2 calculator
 
-## Technológiai stack
-- Backend: `Python`, `Flask`
-- Frontend: `HTML`, `CSS`, `JavaScript`
-- Diagramok: `Chart.js` (CDN)
-- Adatforrás: `Our World in Data`
+## Tech stack
+- Python, Flask
+- HTML, CSS, JavaScript
+- Chart.js (CDN)
+- Our World in Data datasets
 
-## Futtatás lokálisan (opcionális)
+## Local run (optional)
 ```bash
 python -m venv .venv
 .venv\Scripts\activate
@@ -27,30 +27,23 @@ pip install -r requirements.txt
 python app.py
 ```
 
-Majd nyisd meg: `http://127.0.0.1:5000`
+Open: `http://127.0.0.1:5000`
 
-## Projektstruktúra
-- `app.py` - Flask route-ok és API endpointok
-- `templates/` - Jinja2 HTML sablonok
-- `static/` - statikus erőforrások
-- `service/` - adatbetöltés, aggregáció, előrejelzés, API logika
-- `data/` - nyers/cache-elt adatfájlok
+## API endpoints (short)
+- `GET /api/meta?metric=temperature|precipitation|co2`
+- `GET /api/overview?metric=...&year=...&compare=...`
+- `GET /api/metric/year?metric=...&year=...`
+- `GET /api/metric/entity?metric=...&entity=...&year=...`
+- `GET /api/map?metric=...&year=...`
+- `GET /api/temperature/continents?year=...`
+- `GET /api/temperature/monthly?entity=...&year=...`
+- `GET /api/temperature/warmest`
+- `GET /api/temperature/forecast`
+- `GET /api/precipitation/continents?year=...`
+- `GET /api/precipitation/monthly?entity=...&year=...`
+- `GET /api/co2/continents?year=...`
+- `GET /api/co2/overview?year=...&compare=...&entity=...`
+- `POST /admin/refresh`
 
-## API végpontok (röviden)
-- `GET /api/meta?metric=temperature|precipitation|co2` - elérhető évek és entitások
-- `GET /api/overview?metric=...&year=...&compare=...` - összesített nézet
-- `GET /api/metric/year?metric=...&year=...` - adott év adatai
-- `GET /api/metric/entity?metric=...&entity=...&year=...` - adott entitás részletei
-- `GET /api/map?metric=...&year=...` - térképes megjelenítéshez szükséges adatok
-- `GET /api/temperature/continents?year=...` - hőmérséklet kontinensenként
-- `GET /api/temperature/monthly?entity=...&year=...` - hőmérséklet havi bontás
-- `GET /api/temperature/warmest` - legmelegebb globális év
-- `GET /api/temperature/forecast` - felmelegedési előrejelzés
-- `GET /api/precipitation/continents?year=...` - csapadék kontinensenként
-- `GET /api/precipitation/monthly?entity=...&year=...` - csapadék havi bontás
-- `GET /api/co2/continents?year=...` - CO2 kontinensenként
-- `GET /api/co2/overview?year=...&compare=...&entity=...` - CO2 összesítés és per fő érték
-- `POST /admin/refresh` - adatcache frissítése
-
-## Licenc és jogok
-`© 2026 climate.meteon.hu – Minden jog fenntartva.`
+## Rights
+`Copyright 2026 climate.meteon.hu. All rights reserved.`
