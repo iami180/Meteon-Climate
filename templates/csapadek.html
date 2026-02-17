@@ -18,19 +18,24 @@
 
   <div class="grid grid-3">
     <div class="card">
-      <h3>Éves összcsapadék</h3>
+      <h3>Éves csapadék</h3>
       <div class="value" id="rainAnnual">—</div>
       <div class="muted">kontinensátlag</div>
+    </div>
+    <div class="card">
+      <h3>Éves csapadékingás</h3>
+      <div class="value" id="rainAnnualRange">—</div>
+      <div class="muted">max − min havi csapadék</div>
+    </div>
+    <div class="card">
+      <h3>Legcsapadékosabb hónap</h3>
+      <div class="value" id="rainWettestMonth">—</div>
+      <div class="muted" id="rainWettestValue">—</div>
     </div>
     <div class="card">
       <h3>Legcsapadékosabb kontinens</h3>
       <div class="value" id="rainWetContinent">—</div>
       <div class="muted" id="rainWetValue">—</div>
-    </div>
-    <div class="card">
-      <h3>Legszárazabb kontinens</h3>
-      <div class="value" id="rainDryContinent">—</div>
-      <div class="muted" id="rainDryValue">—</div>
     </div>
   </div>
 </section>
@@ -65,10 +70,11 @@
   const rainYear = document.getElementById("rainYear");
   const rainEntity = document.getElementById("rainEntity");
   const rainAnnual = document.getElementById("rainAnnual");
+  const rainAnnualRange = document.getElementById("rainAnnualRange");
+  const rainWettestMonth = document.getElementById("rainWettestMonth");
+  const rainWettestValue = document.getElementById("rainWettestValue");
   const rainWetContinent = document.getElementById("rainWetContinent");
   const rainWetValue = document.getElementById("rainWetValue");
-  const rainDryContinent = document.getElementById("rainDryContinent");
-  const rainDryValue = document.getElementById("rainDryValue");
   const rainContinentTitle = document.getElementById("rainContinentTitle");
   const rainNarrative = document.getElementById("rainNarrative");
   const rainMonthlyTitle = document.getElementById("rainMonthlyTitle");
@@ -183,17 +189,13 @@
 
     const sorted = rows.slice().sort((a, b) => b.value - a.value);
     const wettest = sorted[0];
-    const driest = sorted[sorted.length - 1];
     rainWetContinent.textContent = labelFor(wettest?.entity) ?? "—";
     rainWetValue.textContent = fmt(wettest?.value);
-    rainDryContinent.textContent = labelFor(driest?.entity) ?? "—";
-    rainDryValue.textContent = fmt(driest?.value);
 
     rainNarrative.textContent =
       `A csapadék éves összehasonlítása a ${year} évre mutatja meg, mely kontinensek a legnedvesebbek ` +
-      `és melyek a legszárazabbak. Ebben az évben a legmagasabb éves átlag ${labelFor(wettest?.entity) ?? "—"} ` +
-      `térségben látható (${fmt(wettest?.value)}), míg a legalacsonyabb érték ${labelFor(driest?.entity) ?? "—"} ` +
-      `régióhoz köthető (${fmt(driest?.value)}). A kiválasztott kontinens (${labelFor(rainEntity.value)}) éves átlaga ` +
+      `és melyik a legcsapadékosabb térség. Ebben az évben a legmagasabb éves átlag ${labelFor(wettest?.entity) ?? "—"} ` +
+      `kontinensen látható (${fmt(wettest?.value)}). A kiválasztott kontinens (${labelFor(rainEntity.value)}) éves átlaga ` +
       `${fmt((rows.find((r) => r.entity === rainEntity.value) || {}).value)}. Ez az összehasonlítás segít ` +
       `abban, hogy a csapadékmintázatokat nagy léptékben értelmezzük, és észrevegyük a szélsőséges ` +
       `nedves vagy száraz régiókat.`; 
@@ -213,16 +215,38 @@
     const entity = rainEntity.value;
     const res = await fetch(`/api/precipitation/monthly?entity=${encodeURIComponent(entity)}&year=${year}`);
     const data = await res.json();
-    const values = Array(12).fill(0);
+    const values = Array(12).fill(null);
     (data.months || []).forEach((m) => {
       values[m.month - 1] = m.value;
     });
-    rainMonthlyChart.data.datasets[0].data = values;
+    rainMonthlyChart.data.datasets[0].data = values.map((v) => (v === null ? 0 : v));
     rainMonthlyChart.update();
     rainMonthlyTitle.textContent = `Havi csapadék (${labelFor(entity)}, ${year})`;
     rainMonthlyNote.textContent = data.estimated_monthly
       ? "A havi eloszlás éves adatokból becsült kontinensprofil."
       : "A havi eloszlás közvetlen adatokból készült.";
+
+    const clean = values.filter((v) => typeof v === "number");
+    if (clean.length) {
+      const annualRange = Math.max(...clean) - Math.min(...clean);
+      let maxVal = null;
+      let maxIdx = null;
+      values.forEach((value, index) => {
+        if (typeof value !== "number") return;
+        if (maxVal === null || value > maxVal) {
+          maxVal = value;
+          maxIdx = index;
+        }
+      });
+      rainAnnualRange.textContent = fmt(annualRange);
+      rainWettestMonth.textContent =
+        ["Jan", "Feb", "Már", "Ápr", "Máj", "Jún", "Júl", "Aug", "Szep", "Okt", "Nov", "Dec"][maxIdx] || "—";
+      rainWettestValue.textContent = fmt(maxVal);
+    } else {
+      rainAnnualRange.textContent = "—";
+      rainWettestMonth.textContent = "—";
+      rainWettestValue.textContent = "—";
+    }
   }
 
   rainYear.addEventListener("change", () => {
