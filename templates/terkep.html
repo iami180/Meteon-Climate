@@ -51,8 +51,8 @@
   crossorigin=""
 ></script>
 <script>
-  const SEO_INITIAL_METRIC = {{ initial_metric | default(None) | tojson }};
-  const SEO_INITIAL_YEAR = {{ initial_year | default(None) | tojson }};
+  const SEO_INITIAL_METRIC = {{ initial_metric | default(none) | tojson }};
+  const SEO_INITIAL_YEAR = {{ initial_year | default(none) | tojson }};
   const map = L.map("map", {
     minZoom: 1,
     maxZoom: 6,

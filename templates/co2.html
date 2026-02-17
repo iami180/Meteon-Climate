@@ -60,8 +60,8 @@
 {% block scripts %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-  const SEO_INITIAL_YEAR = {{ initial_year | default(None) | tojson }};
-  const SEO_INITIAL_ENTITY_SLUG = {{ initial_entity_slug | default(None) | tojson }};
+  const SEO_INITIAL_YEAR = {{ initial_year | default(none) | tojson }};
+  const SEO_INITIAL_ENTITY_SLUG = {{ initial_entity_slug | default(none) | tojson }};
   const co2Year = document.getElementById("co2Year");
   const co2Entity = document.getElementById("co2Entity");
   const co2Global = document.getElementById("co2Global");

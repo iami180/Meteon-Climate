@@ -79,8 +79,8 @@
 {% block scripts %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-  const SEO_INITIAL_YEAR = {{ initial_year | default(None) | tojson }};
-  const SEO_INITIAL_COMPARE = {{ initial_compare | default(None) | tojson }};
+  const SEO_INITIAL_YEAR = {{ initial_year | default(none) | tojson }};
+  const SEO_INITIAL_COMPARE = {{ initial_compare | default(none) | tojson }};
   const yearSelect = document.getElementById("yearSelect");
   const compareSelect = document.getElementById("compareSelect");
   const selectedYear = document.getElementById("selectedYear");
