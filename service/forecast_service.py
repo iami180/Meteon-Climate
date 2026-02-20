@@ -18,7 +18,7 @@ FALLBACK_BASELINE_END = 1980
 TRAIN_START = 1950
 TRAIN_END = 2000
 TARGET_YEAR = 2050
-F2X = 3.7  # W/m^2 forcing at CO2 doubling
+F2X = 3.7  # itt egy fix szam, co2 duplazodashoz hasznaljuk
 PREINDUSTRIAL_OFFSET_FROM_1951_1980 = 0.32
 
 
@@ -46,19 +46,19 @@ class ScenarioConfig:
 
 
 SCENARIOS: Tuple[ScenarioConfig, ...] = (
-    ScenarioConfig("low", "Alacsony kibocsátás", 1.1, 1.8, 0.55, -0.012, -0.01, 0.02),
-    ScenarioConfig("medium", "Közepes kibocsátás", 1.9, 4.0, 0.8, -0.008, -0.002, 0.05),
-    ScenarioConfig("high", "Magas kibocsátás", 3.6, 9.4, 1.3, -0.011, 0.012, 0.1),
+    ScenarioConfig("low", "Alacsony kibocsatas", 1.1, 1.8, 0.55, -0.012, -0.01, 0.02),
+    ScenarioConfig("medium", "Kozepes kibocsatas", 1.9, 4.0, 0.8, -0.008, -0.002, 0.05),
+    ScenarioConfig("high", "Magas kibocsatas", 3.6, 9.4, 1.3, -0.011, 0.012, 0.1),
 )
 
 
+# a vilag homerseklet idosorat adja
 def _world_temperature_series() -> Dict[int, float]:
     ensure_metric_loaded("temperature")
     yearly = STORE.yearly.get("temperature", {})
     world = yearly.get("World", {})
     if world:
         series = dict(world)
-        # Drop latest incomplete year if monthly data has <12 valid months.
         world_monthly = STORE.monthly.get("temperature", {}).get("World", {})
         for y, months in list(world_monthly.items()):
             valid = [m for m in months if isinstance(m, float) and m == m]
@@ -73,6 +73,7 @@ def _world_temperature_series() -> Dict[int, float]:
     return series
 
 
+# a vilag co2 idosorat adja egységesitve
 def _world_co2_emissions_series() -> Dict[int, float]:
     ensure_metric_loaded("co2")
     yearly = STORE.yearly.get("co2", {})
@@ -81,7 +82,6 @@ def _world_co2_emissions_series() -> Dict[int, float]:
         out: Dict[int, float] = {}
         for y, v in world.items():
             val = float(v)
-            # OWID series is typically in tonnes; convert to Gt if needed.
             if abs(val) > 10000:
                 val /= 1_000_000_000.0
             out[y] = val
@@ -97,6 +97,7 @@ def _world_co2_emissions_series() -> Dict[int, float]:
     return series
 
 
+# kiszamolja az alapidoszak atlagat
 def _baseline_value(series: Dict[int, float]) -> Tuple[Optional[float], str, float]:
     vals = [v for y, v in series.items() if BASELINE_START <= y <= BASELINE_END]
     if vals:
@@ -114,9 +115,8 @@ def _baseline_value(series: Dict[int, float]) -> Tuple[Optional[float], str, flo
     return None, "n/a", 0.0
 
 
+# kibocsatasbol becsult koncentracios idosort epít
 def _build_concentration_history(years: List[int], co2_emissions: Dict[int, float]) -> Dict[str, Dict[int, float]]:
-    # Convert emissions to concentration proxy with simple airborne-fraction + sink response.
-    # 1 ppm CO2 ~ 7.81 GtCO2.
     co2_ppm: Dict[int, float] = {}
     ch4_ppb: Dict[int, float] = {}
     n2o_ppb: Dict[int, float] = {}
@@ -129,7 +129,6 @@ def _build_concentration_history(years: List[int], co2_emissions: Dict[int, floa
         delta_ppm = (0.46 * emissions / 7.81) - (0.011 * max(0.0, c - 285.0))
         c = max(260.0, c + delta_ppm)
 
-        # Proxy growth linked partly to fossil combustion intensity.
         m += max(0.0, 0.7 + 0.035 * delta_ppm - 0.006 * (m - 1900.0))
         n += max(0.0, 0.12 + 0.0035 * delta_ppm - 0.0018 * (n - 335.0))
 
@@ -139,20 +138,21 @@ def _build_concentration_history(years: List[int], co2_emissions: Dict[int, floa
     return {"co2": co2_ppm, "ch4": ch4_ppb, "n2o": n2o_ppb}
 
 
+# co2 ch4 es n2o sugarzasi hatasat szamolja
 def _forcing_components(co2_ppm: float, ch4_ppb: float, n2o_ppb: float) -> Dict[str, float]:
-    # CO2 radiative forcing (Myhre et al.): ΔF = 5.35 * ln(C/C0)
     co2_forcing = 5.35 * math.log(max(co2_ppm, 1.0) / 278.0)
 
-    # Simplified CH4 / N2O terms around preindustrial baseline.
     ch4_forcing = 0.036 * (math.sqrt(max(ch4_ppb, 1.0)) - math.sqrt(722.0))
     n2o_forcing = 0.12 * (math.sqrt(max(n2o_ppb, 1.0)) - math.sqrt(270.0))
     return {"co2": co2_forcing, "ch4": ch4_forcing, "n2o": n2o_forcing}
 
 
+# egyszeru enso jellegu oszcillaciot ad
 def _enso_proxy(year: int, amp: float) -> float:
     return amp * math.sin((2.0 * math.pi * (year - 1950) / 4.1) + 0.7)
 
 
+# aeroszol indexeket szamol az adott evre
 def _aerosol_indices(year: int, co2_emissions: Dict[int, float]) -> Tuple[float, float]:
     emissions = co2_emissions.get(year, co2_emissions.get(year - 1, 0.0))
     ref = max(co2_emissions.get(1990, 1.0), 1.0)
@@ -164,6 +164,7 @@ def _aerosol_indices(year: int, co2_emissions: Dict[int, float]) -> Tuple[float,
     return sulfate_idx, bc_idx
 
 
+# lefuttatja a homerseklet modellt evrol evre
 def _run_temperature_model(
     years: List[int],
     conc: Dict[str, Dict[int, float]],
@@ -182,13 +183,14 @@ def _run_temperature_model(
         aerosol_forcing = (params.sulfate_scale * sulfate_idx) + (params.bc_scale * bc_idx)
         net_forcing = forc["co2"] + forc["ch4"] + forc["n2o"] + aerosol_forcing
 
-        # Two-layer EBM annual step.
+        # ket reteget lepunk egyszerre: felszin (ts) es melyebb ocean (to)
         ts += (net_forcing - lam * ts - params.kappa * (ts - to)) / params.cs + _enso_proxy(year, params.enso_amp)
         to += (params.kappa * (ts - to)) / params.co
         out[year] = ts
     return out
 
 
+# kiszamolja az rmse hibamerteket
 def _rmse(y_true: List[float], y_pred: List[float]) -> float:
     if not y_true:
         return float("inf")
@@ -196,14 +198,15 @@ def _rmse(y_true: List[float], y_pred: List[float]) -> float:
     return math.sqrt(err)
 
 
+# kiszamolja a mae hibamerteket
 def _mae(y_true: List[float], y_pred: List[float]) -> float:
     if not y_true:
         return float("inf")
     return sum(abs(a - b) for a, b in zip(y_true, y_pred)) / len(y_true)
 
 
+# becsult tcr erteket szamol egyszeru kiserlettel
 def _simulate_tcr(params: ModelParams) -> float:
-    # TCR estimate via 1%/yr CO2 increase experiment (70 years ~ doubling).
     lam = F2X / params.ecs
     ts = 0.0
     to = 0.0
@@ -216,6 +219,7 @@ def _simulate_tcr(params: ModelParams) -> float:
     return ts
 
 
+# a modell parametereit hangolja a mult adataihoz
 def _calibrate_params(
     years: List[int], anomaly: Dict[int, float], conc: Dict[str, Dict[int, float]], co2_emissions: Dict[int, float]
 ) -> Tuple[ModelParams, Dict[str, float]]:
@@ -235,6 +239,7 @@ def _calibrate_params(
 
     start_year = years[0]
     start_temp = anomaly.get(start_year, 0.0)
+    # brute force: sok parameter kombinaciot vegigprobalunk
     for ecs in ecs_grid:
         for kappa in kappa_grid:
             for cs in cs_grid:
@@ -257,6 +262,7 @@ def _calibrate_params(
 
                             tcr = _simulate_tcr(params)
                             tcr_penalty = 0.0
+                            # ha a tcr nagyon kilog, buntetest kap a score
                             if tcr < 1.5:
                                 tcr_penalty = (1.5 - tcr) * 2.5
                             elif tcr > 2.2:
@@ -286,16 +292,18 @@ def _calibrate_params(
     return best, metrics
 
 
+# kategoriat ad az anomalia merteke alapjan
 def _classify_anomaly(value: float) -> str:
     if value < 1.5:
-        return "mérsékelt melegedés"
+        return "mersekelt melegedes"
     if value < 2.0:
-        return "jelentős melegedés"
+        return "jelentos melegedes"
     if value < 3.0:
-        return "magas kockázatú melegedés"
-    return "kritikus melegedés"
+        return "magas kockazatu melegedes"
+    return "kritikus melegedes"
 
 
+# percentilis erteket szamol rendezett listabol
 def _percentile(sorted_values: List[float], p: float) -> float:
     if not sorted_values:
         return float("nan")
@@ -310,6 +318,7 @@ def _percentile(sorted_values: List[float], p: float) -> float:
     return sorted_values[lo] * (1.0 - frac) + sorted_values[hi] * frac
 
 
+# egy forgatokonyv jovobeli palyajat szamolja
 def _project_scenario(
     scenario: ScenarioConfig,
     base_params: ModelParams,
@@ -326,6 +335,7 @@ def _project_scenario(
 
     all_draws: List[Dict[int, float]] = []
     for _ in range(draws):
+        # minden futasban picit randomizaljuk a parametereket (monte carlo)
         ecs = min(4.2, max(2.4, rng.gauss(base_params.ecs, 0.35)))
         kappa = min(0.95, max(0.35, rng.gauss(base_params.kappa, 0.08)))
         cs = min(12.0, max(6.0, rng.gauss(base_params.cs, 0.9)))
@@ -360,6 +370,7 @@ def _project_scenario(
 
     series: List[Dict[str, Any]] = []
     for year in years:
+        # sok futasbol percentilis savot csinalunk (p10-p50-p90)
         vals = sorted(draw[year] for draw in all_draws)
         p10 = _percentile(vals, 0.1)
         p50 = _percentile(vals, 0.5)
@@ -374,6 +385,7 @@ def _project_scenario(
             }
         )
 
+    # segedfuggveny: egy konkret cel-ev sorat adja vissza
     def pick(target: int) -> Dict[str, Any]:
         row = next((r for r in series if r["year"] == target), series[-1])
         return {
@@ -397,6 +409,7 @@ def _project_scenario(
     }
 
 
+# osszerakja a teljes elorejelzes api valaszt
 def forecast_response() -> Tuple[Dict[str, Any], Optional[str]]:
     temp_series = _world_temperature_series()
     if not temp_series:
@@ -435,20 +448,20 @@ def forecast_response() -> Tuple[Dict[str, Any], Optional[str]]:
     historical = [{"year": y, "value": round(anomaly[y], 3)} for y in years if y >= max(1900, current_year - 80)]
     return (
         {
-            "target": "Globális átlagos felszíni hőmérséklet anomália (°C)",
+            "target": "Globalis atlagos felszini homerseklet anomalia (C)",
             "baseline_period": baseline_period,
             "baseline_adjustment_c": round(baseline_offset, 3),
-            "time_resolution": "éves átlag",
+            "time_resolution": "eves atlag",
             "current_year": current_year,
             "current_anomaly": round(current_temp, 3),
             "historical": historical,
             "scenarios": scenarios,
             "inputs": {
                 "ghg": ["CO2 (ppm)", "CH4 (ppb)", "N2O (ppb)"],
-                "forcing_formula": "CO2: ΔF = 5.35 * ln(C/C0), CH4/N2O: sqrt alapú approximáció",
-                "aerosol_proxy": ["szulfát index", "black carbon index"],
-                "ocean_component": "kétrekeszes energiaegyensúly-modell (felszín + mélyóceán)",
-                "enso_component": "ENSO jellegű periodikus komponens",
+                "forcing_formula": "CO2: dF = 5.35 * ln(C/C0), CH4/N2O: sqrt alapu kozelites",
+                "aerosol_proxy": ["szulfat index", "black carbon index"],
+                "ocean_component": "ketrekeszes energiaegyensuly modell (felszin + melyocean)",
+                "enso_component": "ENSO jellegu periodikus komponens",
             },
             "calibration": {
                 "ecs_c": backtest["ecs"],
@@ -458,9 +471,9 @@ def forecast_response() -> Tuple[Dict[str, Any], Optional[str]]:
             },
             "backtest": backtest,
             "notes": [
-                "Kalibráció: 1950-2000, validáció/backtest: 2001-től napjainkig.",
-                "Aeroszolok bizonytalansága Monte Carlo mintázással került a tartományba.",
-                "Szcenárió-készlet: alacsony, közepes, magas kibocsátási pálya.",
+                "Kalibracio: 1950-2000, validacio/backtest: 2001-tol napjainkig.",
+                "Aeroszol bizonytalansag Monte Carlo mintazassal kerult a tartomanyba.",
+                "Szcenario keszlet: alacsony, kozepes, magas kibocsatasi palya.",
             ],
         },
         None,

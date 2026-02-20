@@ -3,8 +3,8 @@ import os
 DATA_DIR = os.getenv("DATA_DIR", "data")
 RAW_DIR = os.path.join(DATA_DIR, "raw")
 
-# Default OWID grapher chart names. Override via env vars if needed.
-# Example: TEMPERATURE_CHART=average-monthly-surface-temperature
+# itt vannak az alap chart nevek, ha kell env-ben at lehet irni
+# pelda: TEMPERATURE_CHART=average-monthly-surface-temperature
 CHARTS = {
     "temperature": os.getenv("TEMPERATURE_CHART", "average-monthly-surface-temperature"),
     "precipitation": os.getenv("PRECIPITATION_CHART", "average-precipitation-per-year"),

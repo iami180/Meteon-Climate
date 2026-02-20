@@ -26,6 +26,7 @@ CO2_FALLBACK_ANNUAL_TONS = {
 }
 
 
+# ellenorzi hogy a kert metrika ervenyes es be van toltve
 def validate_metric(metric: str) -> Optional[str]:
     if metric not in METRICS:
         return "Unknown metric"
@@ -35,6 +36,7 @@ def validate_metric(metric: str) -> Optional[str]:
     return None
 
 
+# a metrika utolso elerheto evet adja vissza
 def default_year(metric: str) -> int:
     years = STORE.years.get(metric)
     if years:
@@ -42,22 +44,24 @@ def default_year(metric: str) -> int:
     return DEFAULT_COMPARE_YEAR
 
 
+# az alap osszehasonlitasi evet adja
 def default_compare_year() -> int:
     return DEFAULT_COMPARE_YEAR
 
 
-def _resolve_year(metric: str, year: int) -> Optional[int]:
+# kivalaszt egy ervenyes evet, ha lehet fallbackgel
+def _pick_year(metric: str, year: int) -> Optional[int]:
     years = STORE.years.get(metric, [])
     if not years:
         return None
     if year in years:
         return year
-    # Some sources can lag behind one year; allow latest fallback.
     if metric in {"precipitation", "co2"} and year > years[-1]:
         return years[-1]
     return None
 
 
+# osszerakja a meta valaszt evekkel es helyekkel
 def meta_response(metric: Optional[str] = None) -> Dict[str, Any]:
     if metric and metric in METRICS:
         ensure_metric_loaded(metric)
@@ -85,6 +89,7 @@ def meta_response(metric: Optional[str] = None) -> Dict[str, Any]:
     }
 
 
+# osszefoglalo valaszt epit a metrika adataibol
 def overview_response(metric: str, year: int, compare: int) -> Tuple[Dict[str, Any], Optional[str]]:
     err = validate_metric(metric)
     if err:
@@ -93,22 +98,22 @@ def overview_response(metric: str, year: int, compare: int) -> Tuple[Dict[str, A
     yearly = STORE.yearly[metric]
     monthly = STORE.monthly[metric]
 
-    resolved_year = _resolve_year(metric, year)
-    if resolved_year is None:
+    ok_year = _pick_year(metric, year)
+    if ok_year is None:
         return {"error": "Year not available"}, "Year not available"
-    resolved_compare = _resolve_year(metric, compare)
-    if resolved_compare is None:
+    ok_compare = _pick_year(metric, compare)
+    if ok_compare is None:
         compare = STORE.years[metric][0]
-        resolved_compare = compare
-    year = resolved_year
-    compare = resolved_compare
+        ok_compare = compare
+    year = ok_year
+    compare = ok_compare
 
     world = yearly.get("World", {})
-    selected_val = world.get(year) or aggregate_world(metric, year)
+    now_val = world.get(year) or aggregate_world(metric, year)
     compare_val = world.get(compare) or aggregate_world(metric, compare)
     delta = None
-    if selected_val is not None and compare_val is not None:
-        delta = selected_val - compare_val
+    if now_val is not None and compare_val is not None:
+        delta = now_val - compare_val
 
     range_value = None
     if "World" in monthly and year in monthly["World"]:
@@ -144,8 +149,8 @@ def overview_response(metric: str, year: int, compare: int) -> Tuple[Dict[str, A
             "metric": metric,
             "selected_year": year,
             "compare_year": compare,
-            "global": {"selected": selected_val, "compare": compare_val, "delta": delta},
-            "range": {"value": range_value, "definition": "max(havi átlag) - min(havi átlag)"},
+            "global": {"selected": now_val, "compare": compare_val, "delta": delta},
+            "range": {"value": range_value, "definition": "max(havi Ä‚Ë‡tlag) - min(havi Ä‚Ë‡tlag)"},
             "continents": continents,
             "rank": {"warmest": warmest, "coldest": coldest},
         },
@@ -153,14 +158,15 @@ def overview_response(metric: str, year: int, compare: int) -> Tuple[Dict[str, A
     )
 
 
+# egy evre ad vissza metrika adatlistat
 def metric_year_response(metric: str, year: int, continents_only: bool = False) -> Tuple[Dict[str, Any], Optional[str]]:
     err = validate_metric(metric)
     if err:
         return {"error": err}, err
-    resolved_year = _resolve_year(metric, year)
-    if resolved_year is None:
+    ok_year = _pick_year(metric, year)
+    if ok_year is None:
         return {"error": "Year not available"}, "Year not available"
-    year = resolved_year
+    year = ok_year
     yearly = STORE.yearly[metric]
     data = []
     for entity, values in yearly.items():
@@ -184,14 +190,15 @@ def metric_year_response(metric: str, year: int, continents_only: bool = False) 
     return {"metric": metric, "year": year, "data": data}, None
 
 
+# egy hely havi adatait adja vissza
 def metric_entity_response(metric: str, entity: str, year: int) -> Tuple[Dict[str, Any], Optional[str]]:
     err = validate_metric(metric)
     if err:
         return {"error": err}, err
-    resolved_year = _resolve_year(metric, year)
-    if resolved_year is None:
+    ok_year = _pick_year(metric, year)
+    if ok_year is None:
         return {"error": "Year not available"}, "Year not available"
-    year = resolved_year
+    year = ok_year
     months = []
     estimated = False
     if entity in STORE.monthly[metric] and year in STORE.monthly[metric][entity]:
@@ -212,14 +219,15 @@ def metric_entity_response(metric: str, entity: str, year: int) -> Tuple[Dict[st
     return {"metric": metric, "entity": entity, "year": year, "months": months, "estimated_monthly": estimated}, None
 
 
+# terkephez valo orszag listat es ertekeket ad
 def map_response(metric: str, year: int) -> Tuple[Dict[str, Any], Optional[str]]:
     err = validate_metric(metric)
     if err:
         return {"error": err}, err
-    resolved_year = _resolve_year(metric, year)
-    if resolved_year is None:
+    ok_year = _pick_year(metric, year)
+    if ok_year is None:
         return {"error": "Year not available"}, "Year not available"
-    year = resolved_year
+    year = ok_year
 
     countries = []
     yearly = STORE.yearly[metric]
@@ -263,6 +271,7 @@ def map_response(metric: str, year: int) -> Tuple[Dict[str, Any], Optional[str]]
     }, None
 
 
+# co2 overview valaszhoz hozzaadja az egy fore jutot
 def co2_overview_with_per_capita(year: int, compare: int, entity: str) -> Tuple[Dict[str, Any], Optional[str]]:
     payload, err = overview_response("co2", year, compare)
     resolved_year = payload.get("selected_year", year)
@@ -271,6 +280,7 @@ def co2_overview_with_per_capita(year: int, compare: int, entity: str) -> Tuple[
     return payload, err
 
 
+# megkeresi a legmelegebb globalis evet
 def warmest_year_global() -> Dict[str, Any]:
     ensure_metric_loaded("temperature")
     years = STORE.years.get("temperature", [])

@@ -36,6 +36,7 @@ COUNTRY_MAP_LOADED = False
 LAST_ACCESS = 0.0
 
 
+# kiuriti a memoriaban tarolt adatokat
 def reset_store() -> None:
     STORE.monthly.clear()
     STORE.yearly.clear()
@@ -46,6 +47,7 @@ def reset_store() -> None:
     POPULATION_YEARS.clear()
 
 
+# frissiti az utolso hasznalat idejet es ttl-t nez
 def touch_access() -> None:
     global LAST_ACCESS
     now = time.time()

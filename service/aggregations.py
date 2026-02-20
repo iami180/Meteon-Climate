@@ -1,20 +1,20 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from typing import Dict, Optional
 
 from .config import CONTINENTS
 from .loaders import ensure_population_loaded, load_country_map
 from .store import COUNTRY_TO_CONTINENT, POPULATION_YEARLY, STORE
 
-AGGREGATION = {
+HOW_TO_SUM = {
     "temperature": "mean",
     "precipitation": "mean",
     "co2": "sum",
 }
 
 
-def continent_of(entity: str) -> Optional[str]:
+# megadja egy hely melyik kontinenshez tartozik
+def continent_of(entity):
     if entity in {"Oceania", "Oceania (NIAID)"}:
         return "Australia and Oceania"
     if entity in CONTINENTS:
@@ -26,33 +26,34 @@ def continent_of(entity: str) -> Optional[str]:
     return mapped
 
 
-def aggregate_yearly(metric: str, year: int) -> Dict[str, float]:
+# kontinens szintre osszevonja az eves adatokat
+def aggregate_yearly(metric, year):
     yearly = STORE.yearly[metric]
-    aggregation = AGGREGATION.get(metric, "mean")
-    sums: Dict[str, float] = defaultdict(float)
-    counts: Dict[str, int] = defaultdict(int)
-    for entity, values in yearly.items():
-        if year not in values:
+    mode = HOW_TO_SUM.get(metric, "mean")
+    sums = defaultdict(float)
+    counts = defaultdict(int)
+    for entity, vals in yearly.items():
+        if year not in vals:
             continue
         continent = continent_of(entity)
         if not continent or continent == "World":
             continue
-        value = values[year]
-        sums[continent] += value
+        sums[continent] += vals[year]
         counts[continent] += 1
-    result = {}
+    out = {}
     for continent, total in sums.items():
-        if aggregation == "sum":
-            result[continent] = total
+        if mode == "sum":
+            out[continent] = total
         else:
             count = counts.get(continent, 1)
-            result[continent] = total / count if count else total
-    return result
+            out[continent] = total / count if count else total
+    return out
 
 
-def aggregate_world(metric: str, year: int) -> Optional[float]:
+# vilag szintet szamol a kontinens adatokbol
+def aggregate_world(metric, year):
     yearly = STORE.yearly[metric]
-    aggregation = AGGREGATION.get(metric, "mean")
+    mode = HOW_TO_SUM.get(metric, "mean")
     values = []
     for entity, series in yearly.items():
         if year in series:
@@ -60,12 +61,13 @@ def aggregate_world(metric: str, year: int) -> Optional[float]:
                 values.append(series[year])
     if not values:
         return None
-    if aggregation == "sum":
+    if mode == "sum":
         return sum(values)
     return sum(values) / len(values)
 
 
-def nearest_year_value(series: Dict[int, float], year: int) -> Optional[float]:
+# a kert evhez legkozelebbi korabbi erteket adja
+def nearest_year_value(series, year):
     if not series:
         return None
     if year in series:
@@ -76,7 +78,8 @@ def nearest_year_value(series: Dict[int, float], year: int) -> Optional[float]:
     return series[max(candidates)]
 
 
-def aggregate_population_continent(continent: str, year: int) -> Optional[float]:
+# kontinens nepesseget szamol a kert evre
+def aggregate_population_continent(continent, year):
     ensure_population_loaded()
     direct = POPULATION_YEARLY.get(continent)
     if direct:
@@ -100,7 +103,8 @@ def aggregate_population_continent(continent: str, year: int) -> Optional[float]
     return total if found else None
 
 
-def aggregate_population_world(year: int) -> Optional[float]:
+# vilag nepesseget szamol a kert evre
+def aggregate_population_world(year):
     ensure_population_loaded()
     world = POPULATION_YEARLY.get("World")
     if world:
@@ -119,7 +123,8 @@ def aggregate_population_world(year: int) -> Optional[float]:
     return total if found else None
 
 
-def co2_per_capita(entity: str, year: int) -> Optional[float]:
+# co2 ertekbol egy fore juto erteket szamol
+def co2_per_capita(entity, year):
     yearly = STORE.yearly["co2"]
     value = None
     if entity in yearly and year in yearly[entity]:

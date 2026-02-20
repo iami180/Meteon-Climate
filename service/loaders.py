@@ -20,7 +20,8 @@ from .store import (
 from .store import reset_store
 
 
-def normalize_entity_name(entity: str) -> str:
+# egysegesiti a bejovo helynevet
+def clean_name(entity: str) -> str:
     entity = (entity or "Unknown").strip()
     if entity.endswith(" (NIAID)"):
         entity = entity.replace(" (NIAID)", "")
@@ -29,7 +30,8 @@ def normalize_entity_name(entity: str) -> str:
     return entity
 
 
-def parse_year_month(value: str) -> Tuple[Optional[int], Optional[int]]:
+# datum szovegbol evet es hónapot olvas ki
+def parse_date(value: str) -> Tuple[Optional[int], Optional[int]]:
     value = value.strip()
     if not value:
         return None, None
@@ -49,6 +51,17 @@ def parse_year_month(value: str) -> Tuple[Optional[int], Optional[int]]:
         return None, None
 
 
+# a clean_name függvenyt hivja
+def normalize_entity_name(entity: str) -> str:
+    return clean_name(entity)
+
+
+# regi nev, a parse_date fuggvenyt hivja
+def parse_year_month(value: str) -> Tuple[Optional[int], Optional[int]]:
+    return parse_date(value)
+
+
+# letolti a megadott owid csv fajlt
 def download_csv(chart_name: str) -> str:
     url = f"https://ourworldindata.org/grapher/{chart_name}.csv"
     resp = requests.get(url, timeout=30)
@@ -56,60 +69,83 @@ def download_csv(chart_name: str) -> str:
     return resp.text
 
 
+# beolvassa a csv szoveget a taroloba
 def load_csv_text(csv_text: str, metric: str) -> None:
+    # csv szovegbol csinalunk egy soronkenti bejarhato olvasot
     reader = csv.DictReader(io.StringIO(csv_text))
+    # ha nincs fejléc, nem tudjuk melyik oszlop mi
     if not reader.fieldnames:
         return
     date_col = None
+    # kulonbozo csv-k mas oszlopnevet hasznalhatnak datumnak
     for candidate in ("Year", "year", "Day", "day", "Date", "date"):
         if candidate in reader.fieldnames:
             date_col = candidate
             break
     if not date_col:
+        # ha nincs ismert nev, marad egy biztonsagi fallback oszlop
         date_col = reader.fieldnames[2]
+    # legtobbszor az utolso oszlopban van maga a meres
     value_col = reader.fieldnames[-1]
     co2_total_col = None
     co2_fossil_col = None
     if metric == "co2":
+        # co2-nel lehet, hogy nem egy oszlop a fo ertek
+        # eloszor a teljes (total) oszlopot keressuk
         if "Total (fossil fuels and land-use change)" in reader.fieldnames:
             co2_total_col = "Total (fossil fuels and land-use change)"
+        # ha nincs total, jo lehet a fossil is fallbacknek
         if "Fossil fuels" in reader.fieldnames:
             co2_fossil_col = "Fossil fuels"
+    # ide megy a havi es eves eredmeny memoriaban
     monthly = STORE.monthly[metric]
     yearly = STORE.yearly[metric]
     for row in reader:
+        # entity nev tisztitasa, hogy ugyanazzal a nevvel taroljuk
         entity = row.get("Entity") or row.get("entity") or "Unknown"
-        entity = normalize_entity_name(entity)
+        entity = clean_name(entity)
+        # ha van 3 betus kod, elrakjuk (pl HUN)
         code = (row.get("Code") or row.get("code") or "").strip()
         if len(code) == 3 and code.isalpha():
             STORE.entity_codes.setdefault(entity, code.upper())
         year_raw = row.get(date_col, "") or ""
         if metric == "co2" and co2_total_col:
+            # ha van total oszlop, azt olvassuk be
             value_raw = row.get(co2_total_col, "")
+            # ha ures, probaljuk a fossil oszlopot
             if value_raw in ("", None) and co2_fossil_col:
                 value_raw = row.get(co2_fossil_col, "")
         else:
             value_raw = row.get(value_col, "")
+        # ures ertekeket kihagyjuk
         if value_raw in ("", None):
             continue
         try:
+            # csak szamma alakithato ertekeket tartjuk meg
             value = float(value_raw)
         except ValueError:
             continue
-        year, month = parse_year_month(str(year_raw))
+        # itt lesz kulon az ev es honap (honap lehet None)
+        year, month = parse_date(str(year_raw))
         if year is None:
+            # ha ev sem olvashato ki, ez a sor nem hasznalhato
             continue
+        # biztositsuk, hogy legyen hely ennek az entity-nek
         yearly.setdefault(entity, {})
         monthly.setdefault(entity, {})
         if month is None:
+            # ha csak ev van, akkor ez eves adat
             yearly[entity][year] = value
         else:
+            # ha mondjuk csak aprilis jon, elotte nan-okkal feltoltjuk a listat
             monthly[entity].setdefault(year, [])
             while len(monthly[entity][year]) < month:
                 monthly[entity][year].append(float("nan"))
+            # month 1-12, lista index 0-11, ezert month - 1
             monthly[entity][year][month - 1] = value
 
 
+# havi adatokbol eves atlagot keszit ahol kell
 def finalize_yearly_from_monthly(metric: str) -> None:
     monthly = STORE.monthly[metric]
     yearly = STORE.yearly[metric]
@@ -122,6 +158,7 @@ def finalize_yearly_from_monthly(metric: str) -> None:
             yearly[entity][year] = sum(clean) / len(clean)
 
 
+# osszedi az elerheto eveket es helyeket
 def collect_meta(metric: str) -> None:
     yearly = STORE.yearly[metric]
     years = set()
@@ -133,6 +170,7 @@ def collect_meta(metric: str) -> None:
     STORE.entities[metric] = sorted(entities)
 
 
+# betolti a metrika adatait fajlbol vagy netrol
 def ensure_metric_loaded(metric: str) -> None:
     touch_access()
     if STORE.years.get(metric):
@@ -156,6 +194,7 @@ def ensure_metric_loaded(metric: str) -> None:
         return
 
 
+# betolti az orszag kontinens megfeleltetest
 def load_country_map() -> None:
     global COUNTRY_MAP_LOADED
     if COUNTRY_MAP_LOADED:
@@ -174,6 +213,7 @@ def load_country_map() -> None:
     COUNTRY_MAP_LOADED = True
 
 
+# betolti a nepesseg adatokat
 def ensure_population_loaded() -> None:
     touch_access()
     if POPULATION_YEARS:
@@ -192,9 +232,10 @@ def ensure_population_loaded() -> None:
         if not reader.fieldnames:
             return
         value_col = reader.fieldnames[-1]
+        # az owid csv-kben altalaban az utolso oszlop a meres erteke
         for row in reader:
             entity = row.get("Entity") or row.get("entity") or "Unknown"
-            entity = normalize_entity_name(entity)
+            entity = clean_name(entity)
             year_raw = row.get("Year") or row.get("year") or ""
             value_raw = row.get(value_col, "")
             if value_raw in ("", None):
@@ -203,7 +244,7 @@ def ensure_population_loaded() -> None:
                 value = float(value_raw)
             except ValueError:
                 continue
-            year, _ = parse_year_month(str(year_raw))
+            year, _ = parse_date(str(year_raw))
             if year is None or year > MAX_YEAR or year < 1800:
                 continue
             POPULATION_YEARLY[entity][year] = value
@@ -212,6 +253,7 @@ def ensure_population_loaded() -> None:
         return
 
 
+# ujra letolti es frissiti az osszes nyers adatot
 def refresh_data() -> dict:
     os.makedirs(RAW_DIR, exist_ok=True)
     reset_store()
@@ -231,6 +273,7 @@ def refresh_data() -> dict:
     return {"status": "ok" if not errors else "partial", "errors": errors}
 
 
+# cache-bol tolti be amit lehet, kulonben frissit
 def load_from_cache_if_exists() -> None:
     reset_store()
     loaded_any = False
@@ -246,6 +289,7 @@ def load_from_cache_if_exists() -> None:
         refresh_data()
 
 
+# elore betolti a gyakran hasznalt adatokat
 def warm_cache_all() -> None:
     for metric in CHARTS.keys():
         ensure_metric_loaded(metric)
