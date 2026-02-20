@@ -52,7 +52,7 @@ SCENARIOS: Tuple[ScenarioConfig, ...] = (
 )
 
 
-# a vilag homerseklet idosorat adja
+# a vilag homerseklet idősorát adja
 def _world_temperature_series() -> Dict[int, float]:
     ensure_metric_loaded("temperature")
     yearly = STORE.yearly.get("temperature", {})

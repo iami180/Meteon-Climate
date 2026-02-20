@@ -197,8 +197,10 @@ def ensure_metric_loaded(metric: str) -> None:
 # betolti az orszag kontinens megfeleltetest
 def load_country_map() -> None:
     global COUNTRY_MAP_LOADED
-    if COUNTRY_MAP_LOADED:
+    if COUNTRY_MAP_LOADED and COUNTRY_TO_CONTINENT:
         return
+    COUNTRY_TO_CONTINENT.clear()
+    loaded = False
     try:
         csv_text = download_csv("continents-according-to-our-world-in-data")
         reader = csv.DictReader(io.StringIO(csv_text))
@@ -208,8 +210,37 @@ def load_country_map() -> None:
             if not country or not continent:
                 continue
             COUNTRY_TO_CONTINENT[country] = continent
+        loaded = len(COUNTRY_TO_CONTINENT) > 0
     except Exception:
-        pass
+        loaded = False
+
+    # Fallback: restcountries API iso3 -> continent map.
+    if not loaded:
+        try:
+            resp = requests.get("https://restcountries.com/v3.1/all?fields=cca3,continents", timeout=30)
+            resp.raise_for_status()
+            rows = resp.json()
+            iso_to_continent = {}
+            for row in rows:
+                code = (row.get("cca3") or "").upper()
+                continents = row.get("continents") or []
+                if not code or not continents:
+                    continue
+                cont = continents[0]
+                if cont == "Oceania":
+                    cont = "Australia and Oceania"
+                iso_to_continent[code] = cont
+
+            for entity, code in STORE.entity_codes.items():
+                cont = iso_to_continent.get((code or "").upper())
+                if cont:
+                    COUNTRY_TO_CONTINENT[entity] = cont
+            loaded = len(COUNTRY_TO_CONTINENT) > 0
+        except Exception:
+            loaded = False
+
+    if loaded and "Australia" in COUNTRY_TO_CONTINENT and COUNTRY_TO_CONTINENT["Australia"] == "Oceania":
+        COUNTRY_TO_CONTINENT["Australia"] = "Australia and Oceania"
     COUNTRY_MAP_LOADED = True
 
 

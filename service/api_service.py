@@ -38,6 +38,7 @@ def validate_metric(metric: str) -> Optional[str]:
 
 # a metrika utolso elerheto evet adja vissza
 def default_year(metric: str) -> int:
+    ensure_metric_loaded(metric)
     years = STORE.years.get(metric)
     if years:
         return years[-1]
