@@ -19,6 +19,7 @@ from service.data_service import (
 
 app = Flask(__name__)
 
+
 threading.Thread(target=warm_cache_all, daemon=True).start()
 
 # bejovo ertekbol szamot csinal, ha nem jo akkor alap erteket ad
@@ -31,25 +32,25 @@ def parse_int(value, fallback):
         return fallback
 
 
-# a kezdo oldalt rendereli
 @app.get("/")
+# a kezdo oldalt rendereli
 def index():
     return render_template("index.html")
 
 
-# a bongeszo ikon fajlt kuldi vissza
 @app.get("/favicon.ico")
+# a bongeszo ikon fajlt kuldi vissza
 def favicon():
     return send_from_directory(app.static_folder, "favicon.ico", mimetype="image/vnd.microsoft.icon")
 
 
-# az attekintes oldalt nyitja meg
 @app.get("/attekintes")
+# az attekintes oldalt nyitja meg
 def attekintes():
     return render_template("attekintes.html")
 
-# attekintes oldal, url-bol kapott kezdo evekkel
 @app.get("/attekintes/<int:initial_year>/<int:initial_compare>")
+# attekintes oldal, url-bol kapott kezdo evekkel
 def attekintes_seo(initial_year, initial_compare):
     return render_template(
         "attekintes.html",
@@ -57,8 +58,8 @@ def attekintes_seo(initial_year, initial_compare):
         initial_compare=initial_compare,
     )
 
-# a foldfelmelegedes oldalt nyitja melegedes nezetben
 @app.get("/foldfelmelegedes")
+# a foldfelmelegedes oldalt nyitja melegedes nezetben
 def foldfelmelegedes():
     return render_template(
         "foldfelmelegedes.html",
@@ -66,8 +67,8 @@ def foldfelmelegedes():
         seo_base_path="/foldfelmelegedes/felmelegedes",
     )
 
-# a melegedes nezetet rendereli
 @app.get("/foldfelmelegedes/felmelegedes")
+# a melegedes nezetet rendereli
 def foldfelmelegedes_felmelegedes():
     return render_template(
         "foldfelmelegedes.html",
@@ -75,8 +76,8 @@ def foldfelmelegedes_felmelegedes():
         seo_base_path="/foldfelmelegedes/felmelegedes",
     )
 
-# az elorejelzes nezetet rendereli
 @app.get("/foldfelmelegedes/elorejelzes")
+# az elorejelzes nezetet rendereli
 def foldfelmelegedes_elorejelzes():
     return render_template(
         "foldfelmelegedes.html",
@@ -84,8 +85,8 @@ def foldfelmelegedes_elorejelzes():
         seo_base_path="/foldfelmelegedes/elorejelzes",
     )
 
-# regi utvonal, atdob a melegedes oldalra
 @app.get("/felmelegedes")
+# regi utvonal, atdob a melegedes oldalra
 def felmelegedes_alias():
     return render_template(
         "foldfelmelegedes.html",
@@ -93,8 +94,8 @@ def felmelegedes_alias():
         seo_base_path="/foldfelmelegedes/felmelegedes",
     )
 
-# regi utvonal, atdob az elorejelzes oldalra
 @app.get("/elorejelzes")
+# regi utvonal, atdob az elorejelzes oldalra
 def elorejelzes_alias():
     return render_template(
         "foldfelmelegedes.html",
@@ -102,8 +103,8 @@ def elorejelzes_alias():
         seo_base_path="/foldfelmelegedes/elorejelzes",
     )
 
-# melegedes oldal url-bol kapott kezdovel
 @app.get("/foldfelmelegedes/felmelegedes/<int:initial_start>/<int:initial_end>")
+# melegedes oldal url-bol kapott kezdovel
 def foldfelmelegedes_felmelegedes_seo(initial_start, initial_end):
     return render_template(
         "foldfelmelegedes.html",
@@ -113,8 +114,8 @@ def foldfelmelegedes_felmelegedes_seo(initial_start, initial_end):
         seo_base_path="/foldfelmelegedes/felmelegedes",
     )
 
-# regi seo utvonal a melegedes oldalhoz
 @app.get("/felmelegedes/<int:initial_start>/<int:initial_end>")
+# regi seo utvonal a melegedes oldalhoz
 def felmelegedes_alias_seo(initial_start, initial_end):
     return render_template(
         "foldfelmelegedes.html",
@@ -125,14 +126,14 @@ def felmelegedes_alias_seo(initial_start, initial_end):
     )
 
 
-# a homerseklet oldalt nyitja meg
 @app.get("/homerseklet")
+# a homerseklet oldalt nyitja meg
 def homerseklet():
     return render_template("homerseklet.html")
 
-# homerseklet oldal url parameterekkel
 @app.get("/homerseklet/<int:initial_year>")
 @app.get("/homerseklet/<int:initial_year>/<initial_entity_slug>")
+# homerseklet oldal url parameterekkel
 def homerseklet_seo(initial_year, initial_entity_slug=None):
     return render_template(
         "homerseklet.html",
@@ -141,13 +142,13 @@ def homerseklet_seo(initial_year, initial_entity_slug=None):
     )
 
 
-# a csapadek oldalt nyitja meg
 @app.get("/csapadek")
+# a csapadek oldalt nyitja meg
 def csapadek():
     return render_template("csapadek.html")
 
-# csapadek oldal url parameterekkel
 @app.get("/csapadek/<int:initial_year>/<initial_entity_slug>")
+# csapadek oldal url parameterekkel
 def csapadek_seo(initial_year, initial_entity_slug):
     return render_template(
         "csapadek.html",
@@ -156,13 +157,13 @@ def csapadek_seo(initial_year, initial_entity_slug):
     )
 
 
-# a co2 oldalt nyitja meg
 @app.get("/co2")
+# a co2 oldalt nyitja meg
 def co2():
     return render_template("co2.html")
 
-# co2 oldal url parameterekkel
 @app.get("/co2/<int:initial_year>/<initial_entity_slug>")
+# co2 oldal url parameterekkel
 def co2_seo(initial_year, initial_entity_slug):
     return render_template(
         "co2.html",
@@ -170,19 +171,19 @@ def co2_seo(initial_year, initial_entity_slug):
         initial_entity_slug=initial_entity_slug,
     )
 
-# a co2 kalkulator oldalt nyitja meg
 @app.get("/co2-kalkulator")
+# a co2 kalkulator oldalt nyitja meg
 def co2_kalkulator():
     return render_template("co2_kalkulator.html")
 
 
-# a terkep oldalt nyitja meg
 @app.get("/terkep")
+# a terkep oldalt nyitja meg
 def terkep():
     return render_template("terkep.html")
 
-# terkep oldal url-bol kapott metrikaval es evvel
 @app.get("/terkep/<initial_metric>/<int:initial_year>")
+# terkep oldal url-bol kapott metrikaval es evvel
 def terkep_seo(initial_metric, initial_year):
     return render_template(
         "terkep.html",
@@ -191,21 +192,21 @@ def terkep_seo(initial_metric, initial_year):
     )
 
 
-# az adatok osszefoglalo oldalt nyitja meg
 @app.get("/adatok")
+# az adatok osszefoglalo oldalt nyitja meg
 def adatok():
     return render_template("overview.html")
 
 
-# meta adatokat ad vissza a valasztott metrikahoz
 @app.get("/api/meta")
+# meta adatokat ad vissza a valasztott metrikahoz
 def api_meta():
     metric = request.args.get("metric")
     return jsonify(meta_response(metric))
 
 
-# osszefoglalo adatokat ad vissza ev es osszehasonlitas alapjan
 @app.get("/api/overview")
+# osszefoglalo adatokat ad vissza ev es osszehasonlitas alapjan
 def api_overview():
     metric = request.args.get("metric", "temperature")
     year = parse_int(request.args.get("year"), default_year(metric))
@@ -214,8 +215,8 @@ def api_overview():
     return jsonify(payload), 400 if err else 200
 
 
-# egy metrika eves listajat adja vissza
 @app.get("/api/metric/year")
+# egy metrika eves listajat adja vissza
 def api_metric_year():
     metric = request.args.get("metric", "temperature")
     year = parse_int(request.args.get("year"), default_year(metric))
@@ -223,8 +224,8 @@ def api_metric_year():
     return jsonify(payload), 400 if err else 200
   
 
-# egy metrika adatait adja vissza egy helyre
 @app.get("/api/metric/entity")
+# egy metrika adatait adja vissza egy helyre
 def api_metric_entity():
     metric = request.args.get("metric", "temperature")
     entity = request.args.get("entity", "World")
@@ -233,8 +234,8 @@ def api_metric_entity():
     return jsonify(payload), 400 if err else 200
 
 
-# terkephez valo orszag adatokat ad vissza
 @app.get("/api/map")
+# terkephez valo orszag adatokat ad vissza
 def api_map():
     metric = request.args.get("metric", "temperature")
     year = parse_int(request.args.get("year"), default_year(metric))
@@ -242,8 +243,8 @@ def api_map():
     return jsonify(payload), 400 if err else 200
 
 
-# homerseklet osszefoglalo adatokat ad
 @app.get("/api/temperature/overview")
+# homerseklet osszefoglalo adatokat ad
 def api_temperature_overview():
     year = parse_int(request.args.get("year"), default_year("temperature"))
     compare = parse_int(request.args.get("compare"), default_compare_year())
@@ -251,16 +252,16 @@ def api_temperature_overview():
     return jsonify(payload), 400 if err else 200
 
 
-# homerseklet adatokat ad kontinens bontasban
 @app.get("/api/temperature/continents")
+# homerseklet adatokat ad kontinens bontasban
 def api_temperature_continents():
     year = parse_int(request.args.get("year"), default_year("temperature"))
     payload, err = metric_year_response("temperature", year, continents_only=True)
     return jsonify(payload), 400 if err else 200
 
 
-# homerseklet havi adatokat ad egy helyre
 @app.get("/api/temperature/monthly")
+# homerseklet havi adatokat ad egy helyre
 def api_temperature_monthly():
     entity = request.args.get("entity", "World")
     year = parse_int(request.args.get("year"), default_year("temperature"))
@@ -268,21 +269,21 @@ def api_temperature_monthly():
     return jsonify(payload), 400 if err else 200
 
 
-# visszaadja melyik ev volt a legmelegebb globalisan
 @app.get("/api/temperature/warmest")
+# visszaadja melyik ev volt a legmelegebb globalisan
 def api_temperature_warmest():
     return jsonify(warmest_year_global())
 
 
-# homerseklet elorejelzes valaszt ad
 @app.get("/api/temperature/forecast")
+# homerseklet elorejelzes valaszt ad
 def api_temperature_forecast():
     payload, err = forecast_response()
     return jsonify(payload), 400 if err else 200
 
 
-# csapadek osszefoglalo adatokat ad
 @app.get("/api/precipitation/overview")
+# csapadek osszefoglalo adatokat ad
 def api_precipitation_overview():
     year = parse_int(request.args.get("year"), default_year("precipitation"))
     compare = parse_int(request.args.get("compare"), default_compare_year())
@@ -290,16 +291,16 @@ def api_precipitation_overview():
     return jsonify(payload), 400 if err else 200
 
 
-# csapadek adatokat ad kontinens bontasban
 @app.get("/api/precipitation/continents")
+# csapadek adatokat ad kontinens bontasban
 def api_precipitation_continents():
     year = parse_int(request.args.get("year"), default_year("precipitation"))
     payload, err = metric_year_response("precipitation", year, continents_only=True)
     return jsonify(payload), 400 if err else 200
 
 
-# csapadek havi adatokat ad egy helyre
 @app.get("/api/precipitation/monthly")
+# csapadek havi adatokat ad egy helyre
 def api_precipitation_monthly():
     entity = request.args.get("entity", "World")
     year = parse_int(request.args.get("year"), default_year("precipitation"))
@@ -307,8 +308,8 @@ def api_precipitation_monthly():
     return jsonify(payload), 400 if err else 200
 
 
-# co2 osszefoglalo adatokat ad plusz per capita adattal
 @app.get("/api/co2/overview")
+# co2 osszefoglalo adatokat ad plusz per capita adattal
 def api_co2_overview():
     year = parse_int(request.args.get("year"), default_year("co2"))
     compare = parse_int(request.args.get("compare"), default_compare_year())
@@ -317,16 +318,16 @@ def api_co2_overview():
     return jsonify(payload), 400 if err else 200
 
 
-# co2 adatokat ad kontinens bontasban
 @app.get("/api/co2/continents")
+# co2 adatokat ad kontinens bontasban
 def api_co2_continents():
     year = parse_int(request.args.get("year"), default_year("co2"))
     payload, err = metric_year_response("co2", year, continents_only=True)
     return jsonify(payload), 400 if err else 200
 
 
-# co2 havi adatokat ad egy helyre
 @app.get("/api/co2/monthly")
+# co2 havi adatokat ad egy helyre
 def api_co2_monthly():
     entity = request.args.get("entity", "World")
     year = parse_int(request.args.get("year"), default_year("co2"))
@@ -334,8 +335,8 @@ def api_co2_monthly():
     return jsonify(payload), 400 if err else 200
 
 
-# kezileg ujratolti a nyers adatokat
 @app.post("/admin/refresh")
+# kezileg ujratolti a nyers adatokat
 def admin_refresh():
     result = refresh_data()
     status = 200 if result.get("status") == "ok" else 207
