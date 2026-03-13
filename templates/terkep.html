@@ -74,6 +74,7 @@
   let metricMin = null;
   let metricMax = null;
   let tempBins = null;
+  let metricBins = null;
   let currentMetric = "temperature";
   const FIXED_TEMP_BINS = [
     { max: 0, range: "0 °C alatt", label: "Rendkívül alacsony (sarkvidéki klíma)", color: "#313695" },
@@ -84,6 +85,26 @@
     { max: 20, range: "16–20 °C", label: "Magas", color: "#fdae61" },
     { max: 25, range: "20–25 °C", label: "Nagyon magas", color: "#f46d43" },
     { max: Infinity, range: "25 °C felett", label: "Extrém magas (trópusi)", color: "#a50026" },
+  ];
+  const FIXED_PRECIPITATION_BINS = [
+    { max: 100, range: "0–100 mm", label: "Rendkívül száraz", color: "#f7fbff" },
+    { max: 250, range: "100–250 mm", label: "Nagyon száraz", color: "#deebf7" },
+    { max: 500, range: "250–500 mm", label: "Száraz", color: "#c6dbef" },
+    { max: 750, range: "500–750 mm", label: "Enyhén száraz", color: "#9ecae1" },
+    { max: 1000, range: "750–1000 mm", label: "Közepes", color: "#6baed6" },
+    { max: 1500, range: "1000–1500 mm", label: "Csapadékos", color: "#4292c6" },
+    { max: 2000, range: "1500–2000 mm", label: "Nagyon csapadékos", color: "#2171b5" },
+    { max: Infinity, range: "2000 mm felett", label: "Extrém csapadékos", color: "#084594" },
+  ];
+  const FIXED_CO2_BINS = [
+    { max: 1e7, range: "0–0,01 Gt", label: "Rendkívül alacsony", color: "#fff5eb" },
+    { max: 5e7, range: "0,01–0,05 Gt", label: "Nagyon alacsony", color: "#fee6ce" },
+    { max: 1e8, range: "0,05–0,10 Gt", label: "Alacsony", color: "#fdd0a2" },
+    { max: 2.5e8, range: "0,10–0,25 Gt", label: "Enyhén átlag alatti", color: "#fdae6b" },
+    { max: 5e8, range: "0,25–0,50 Gt", label: "Közepes", color: "#fd8d3c" },
+    { max: 1e9, range: "0,50–1,00 Gt", label: "Magas", color: "#f16913" },
+    { max: 2e9, range: "1,00–2,00 Gt", label: "Nagyon magas", color: "#d94801" },
+    { max: Infinity, range: "2,00 Gt felett", label: "Extrém magas", color: "#8c2d04" },
   ];
   const valueByCode = new Map();
   const valueByName = new Map();
@@ -127,50 +148,44 @@
     return hit ? hit.color : bins[bins.length - 1].color;
   }
 
-  function tempCategoryForValue(value) {
-    if (value === null || value === undefined || Number.isNaN(value) || !tempBins) return null;
-    return tempBins.find((bin) => value <= bin.max) || tempBins[tempBins.length - 1];
-  }
-
-  function colorForSequential(value, min, max) {
-    if (value === null || value === undefined || Number.isNaN(value)) return "#7d7d7d";
-    if (min === null || max === null || min === max) return "#ffb347";
-    const ratio = (value - min) / (max - min);
-    if (ratio < 0.2) return "#ffe8cc";
-    if (ratio < 0.4) return "#ffd08f";
-    if (ratio < 0.6) return "#ffb347";
-    if (ratio < 0.8) return "#f58f3a";
-    return "#d96a2a";
+  function categoryForValue(value, bins) {
+    if (value === null || value === undefined || Number.isNaN(value) || !bins || !bins.length) return null;
+    return bins.find((bin) => value <= bin.max) || bins[bins.length - 1];
   }
 
   function colorForMetric(value) {
     if (currentMetric === "temperature") {
       return colorForTemperature(value, tempBins);
     }
-    return colorForSequential(value, metricMin, metricMax);
+    return colorForTemperature(value, metricBins);
   }
 
   function updateLegend() {
-    if (currentMetric === "temperature") {
-      if (!tempBins) {
-        legend.innerHTML = `<span><span class="swatch" style="background: #596976"></span>Nincs elég adat</span>`;
-        return;
-      }
-      const items = tempBins.map((bin) => {
-        return `<span><span class="swatch" style="background: ${bin.color}"></span>${bin.range} - ${bin.label}</span>`;
-      });
-      legend.innerHTML = items.join("");
+    const bins = currentMetric === "temperature" ? tempBins : metricBins;
+    if (!bins || !bins.length) {
+      legend.innerHTML = `<span><span class="swatch" style="background: #596976"></span>Nincs elég adat</span>`;
       return;
     }
-    legend.innerHTML = `
-      <span><span class="swatch" style="background: #ffe8cc"></span>Alacsony</span>
-      <span><span class="swatch" style="background: #ffb347"></span>Közepes</span>
-      <span><span class="swatch" style="background: #d96a2a"></span>Magas</span>
-    `;
+    const items = bins.map((bin) => {
+      return `<span><span class="swatch" style="background: ${bin.color}"></span>${bin.range} - ${bin.label}</span>`;
+    });
+    legend.innerHTML = items.join("");
   }
 
   function updateTemperatureBins() {
     tempBins = FIXED_TEMP_BINS;
+  }
+
+  function updateMetricBins() {
+    if (currentMetric === "precipitation") {
+      metricBins = FIXED_PRECIPITATION_BINS;
+      return;
+    }
+    if (currentMetric === "co2") {
+      metricBins = FIXED_CO2_BINS;
+      return;
+    }
+    metricBins = null;
   }
 
   function buildMapLayer() {
@@ -195,14 +210,11 @@
           selectedLayer = layer;
           const name = labelForFeature(feature);
           const value = valueForFeature(feature);
-          if (currentMetric === "temperature") {
-            const cat = tempCategoryForValue(value);
-            info.textContent = cat
-              ? `${name}: ${fmt(value, currentMetric)} - ${cat.label} (${cat.range})`
-              : `${name}: ${fmt(value, currentMetric)}`;
-          } else {
-            info.textContent = `${name}: ${fmt(value, currentMetric)}`;
-          }
+          const bins = currentMetric === "temperature" ? tempBins : metricBins;
+          const cat = categoryForValue(value, bins);
+          info.textContent = cat
+            ? `${name}: ${fmt(value, currentMetric)} - ${cat.label} (${cat.range})`
+            : `${name}: ${fmt(value, currentMetric)}`;
         });
       },
     }).addTo(map);
@@ -264,6 +276,7 @@
     metricMin = data.range?.min ?? null;
     metricMax = data.range?.max ?? null;
     updateTemperatureBins();
+    updateMetricBins();
     info.textContent = "Kattints egy országra a térképen.";
     updateLegend();
     await ensureGeoJson();
