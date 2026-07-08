@@ -27,3 +27,8 @@ Thumbs.db
 
 # Project-specific large/local folders
 backups/
+
+# Internal notes / drafts (not for public repo)
+backend_koncepcio.md
+presentation.md
+why*.md
