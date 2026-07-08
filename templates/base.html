@@ -59,8 +59,18 @@
       </div>
     </nav>
     <section class="site-switcher container" aria-label="Meteon oldalak">
-      <a class="site-switcher-link site-switcher-weather" href="https://meteon.hu">Időjárás</a>
-      <a class="site-switcher-link site-switcher-microclima" href="https://microclima.meteon.hu">Microclima</a>
+      <div class="site-switcher-copy">
+        <span class="site-switcher-label">Saját ajánló</span>
+        <h2>Időjárás és mikroklíma adatok a Meteontól</h2>
+        <p>
+          Nézd meg a Meteon aktuális időjárását, vagy válts a Microclima gyakorlati
+          mikroklíma-adataira.
+        </p>
+      </div>
+      <div class="site-switcher-actions">
+        <a class="site-switcher-link site-switcher-weather" href="https://meteon.hu">Időjárás</a>
+        <a class="site-switcher-link site-switcher-microclima" href="https://microclima.meteon.hu">Microclima</a>
+      </div>
     </section>
     {% block content %}{% endblock %}
     <footer class="footer container">
