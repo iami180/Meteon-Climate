@@ -1,7 +1,8 @@
-from flask import Flask, jsonify, render_template, request, send_from_directory
+from flask import Flask, Response, jsonify, render_template, request, send_from_directory
 
 import threading
 
+from service.sitemap import robots_txt, sitemap_xml
 from service.data_service import (
     co2_overview_with_per_capita,
     default_compare_year,
@@ -39,6 +40,16 @@ def index():
 @app.get("/favicon.ico")
 def favicon():
     return send_from_directory(app.static_folder, "favicon.ico", mimetype="image/vnd.microsoft.icon")
+
+
+@app.get("/sitemap.xml")
+def sitemap():
+    return Response(sitemap_xml(), mimetype="application/xml")
+
+
+@app.get("/robots.txt")
+def robots():
+    return Response(robots_txt(), mimetype="text/plain")
 
 
 @app.get("/attekintes")
